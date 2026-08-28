@@ -147,42 +147,24 @@ select:focus{border-color:var(--blue)}
    CONFIG — llena esto con TUS datos
    ═══════════════════════════════════════════════════════════════════════ */
 const CONFIG = {
-  SHEET_ID: '1LHRWB6D6_ZMfLW4cyWDa6USygGD2G7H1Xjy3Q2rhDrQ',
-  // GID de cada pestaña (lo ves en la URL de la hoja al abrir esa pestaña: ...#gid=NUMERO)
-  GID_CAPTURA:  '1536794431',
-  GID_AJUSTES:  '94379032',
-  GID_CONTROL:  '1498236190',
-  // PINs de acceso. level: 'read' = solo Daily Report | 'full' = todo
-  PINS: {
-    '441451': { role:'Dirección', level:'full' },
-    // Para agregar más adelante, copia una línea:
-    // '1111': { role:'Contabilidad · Growthbis', level:'read' },
-  },
+  // URL del Web App (Apps Script). La hoja queda PRIVADA; el Web App valida el PIN.
+  WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbwCCOV67OLeA89YbZyZ0xYxH57Bu313wgRAyGtz8jtF8omp76NCknGsmt8PNs_hi0I/exec',
   // usuarios que ya no están (se marcan en gris, siguen contando)
   INACTIVOS: ['Mackye Hirashi','Cinthya Quiñones','Yunuen Balderrama','Esther Díaz'],
 };
 
 /* ═══ utilidades ═══ */
-const csvUrl = gid => `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/export?format=csv&gid=${gid}`;
 const money = n => (isNaN(n)||n===''||n==null) ? '–' : Number(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
 const int   = n => (isNaN(n)||n==='') ? '–' : Number(n).toLocaleString('es-MX');
 const num = v => { const x=parseFloat(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(x)?0:x; };
 
-// parser CSV robusto (comillas, comas internas, saltos)
-function parseCSV(text){
-  const rows=[]; let row=[], cur='', q=false;
-  for(let i=0;i<text.length;i++){
-    const c=text[i];
-    if(q){ if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
-    else { if(c==='"')q=true; else if(c===','){row.push(cur);cur='';} else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur='';} else if(c==='\r'){} else cur+=c; }
-  }
-  if(cur!==''||row.length){row.push(cur);rows.push(row);}
-  return rows;
-}
-async function fetchSheet(gid){
-  const res=await fetch(csvUrl(gid));
-  if(!res.ok) throw new Error('No se pudo leer la hoja (¿está compartida como "cualquiera con el enlace"?).');
-  return parseCSV(await res.text());
+// pide una vista al Web App (con el PIN de la sesión). Devuelve las filas.
+async function pedirVista(vista){
+  const url = CONFIG.WEBAPP_URL + '?pin=' + encodeURIComponent(SESSION.pin) + '&vista=' + vista;
+  const res = await fetch(url);
+  const j = await res.json();
+  if(!j.ok) throw new Error(j.error || 'Error al leer datos.');
+  return j.filas || [];
 }
 const MESES={ene:0,jan:0,feb:1,mar:2,abr:3,apr:3,may:4,jun:5,jul:6,ago:7,aug:7,sep:8,oct:9,nov:10,dic:11,dec:11};
 // intenta sacar {y,m,d} de una etiqueta de fecha (dd-Mmm, yyyy-mm-dd, dd/mm/yyyy)
@@ -197,16 +179,22 @@ function parseFecha(s){
 /* ═══ LOGIN ═══ */
 let SESSION=null;
 document.getElementById('pin').addEventListener('keydown',e=>{ if(e.key==='Enter')tryLogin(); });
-function tryLogin(){
+async function tryLogin(){
   const pin=document.getElementById('pin').value.trim();
-  const u=CONFIG.PINS[pin];
-  if(!u){ document.getElementById('gateErr').textContent='PIN incorrecto.'; return; }
-  SESSION=u;
-  document.getElementById('gate').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('whoLabel').textContent=u.role;
-  buildTabs();
-  loadAll();
+  const errEl=document.getElementById('gateErr');
+  if(!pin){ errEl.textContent='Escribe tu PIN.'; return; }
+  errEl.textContent='Validando…';
+  try{
+    const res=await fetch(CONFIG.WEBAPP_URL+'?pin='+encodeURIComponent(pin)+'&vista=login');
+    const j=await res.json();
+    if(!j.ok){ errEl.textContent=j.error||'PIN incorrecto.'; return; }
+    SESSION={ pin:pin, role:j.role, level:j.level };
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('whoLabel').textContent=j.role;
+    buildTabs();
+    loadAll();
+  }catch(e){ errEl.textContent='No se pudo conectar. Revisa tu internet.'; }
 }
 function logout(){ location.reload(); }
 
@@ -239,13 +227,13 @@ function switchView(id,btn){
 let DATA={captura:null,ajustes:null,control:null};
 async function loadAll(){
   // Daily (todos)
-  try{ DATA.captura=await fetchSheet(CONFIG.GID_CAPTURA); initDaily(); }
+  try{ DATA.captura=await pedirVista('captura'); initDaily(); }
   catch(e){ document.getElementById('dailyBody').innerHTML=`<div class="errbox">${e.message}</div>`; }
   // Auditoría (solo full)
   if(SESSION.level==='full'){
-    try{ DATA.ajustes=await fetchSheet(CONFIG.GID_AJUSTES); renderAjustes(); }
+    try{ DATA.ajustes=await pedirVista('ajustes'); renderAjustes(); }
     catch(e){ document.getElementById('ajustesBody').innerHTML=`<div class="errbox">${e.message}</div>`; }
-    try{ DATA.control=await fetchSheet(CONFIG.GID_CONTROL); renderControl(); }
+    try{ DATA.control=await pedirVista('control'); renderControl(); }
     catch(e){ document.getElementById('controlBody').innerHTML=`<div class="errbox">${e.message}</div>`; }
   }
 }
