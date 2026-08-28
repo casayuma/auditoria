@@ -8,53 +8,47 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* ══ CONFIG DE MARCA ═══════════════════════════════════════════════════ */
 :root{
   --blue:#2C6E73; --gold:#E1D082; --wool:#EAE3CD; --cactus:#72785E; --purple:#88285C;
   --ink:#20302f; --paper:#F5F1E6; --line:#d8cfb8;
   --ok:#3f7d4e; --warn:#b5892a; --bad:#a8324a;
-  --mono:'Spline Sans Mono',ui-monospace,monospace;
-  --disp:'Fraunces',Georgia,serif;
+  --mono:'Spline Sans Mono',ui-monospace,monospace; --disp:'Fraunces',Georgia,serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{font-family:var(--mono);background:var(--paper);color:var(--ink);line-height:1.5;font-size:15px}
 h1,h2,h3{font-family:var(--disp);font-weight:600;line-height:1.1}
-a{color:var(--blue)}
-button{font-family:var(--mono);cursor:pointer}
-
-/* ══ LOGIN ═════════════════════════════════════════════════════════════ */
+a{color:var(--blue)} button{font-family:var(--mono);cursor:pointer}
 #gate{position:fixed;inset:0;background:var(--blue);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
-.gate-card{background:var(--paper);border-radius:2px;max-width:380px;width:100%;padding:44px 34px;box-shadow:0 30px 80px rgba(0,0,0,.3);text-align:center}
-.gate-eyebrow{font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:var(--cactus);margin-bottom:14px}
-.gate-card h1{font-size:34px;color:var(--blue);margin-bottom:4px;font-weight:900}
-.gate-sub{font-size:12.5px;color:var(--cactus);margin-bottom:30px}
-#pin{font-family:var(--mono);font-size:26px;letter-spacing:.5em;text-align:center;width:100%;padding:14px 0;border:none;border-bottom:2px solid var(--line);background:transparent;color:var(--ink);outline:none;margin-bottom:6px}
-#pin:focus{border-color:var(--blue)}
-#pin::placeholder{letter-spacing:.3em;color:#bbb}
-.gate-btn{margin-top:22px;width:100%;background:var(--blue);color:var(--paper);border:none;padding:14px;font-size:13px;letter-spacing:.15em;text-transform:uppercase;border-radius:2px;transition:background .2s}
+.gate-card{background:var(--paper);border-radius:2px;max-width:400px;width:100%;padding:40px 32px;box-shadow:0 30px 80px rgba(0,0,0,.3);text-align:center}
+.gate-eyebrow{font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:var(--cactus);margin-bottom:12px}
+.gate-card h1{font-size:32px;color:var(--blue);margin-bottom:4px;font-weight:900}
+.gate-sub{font-size:12.5px;color:var(--cactus);margin-bottom:26px}
+.fld{text-align:left;margin-bottom:16px}
+.fld label{display:block;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--cactus);margin-bottom:6px}
+.fld select,.fld input{width:100%;font-family:var(--mono);font-size:16px;padding:11px 12px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:2px;outline:none}
+.fld select:focus,.fld input:focus{border-color:var(--blue)}
+.fld input.pin{letter-spacing:.4em;text-align:center;font-size:22px}
+.gate-btn{margin-top:8px;width:100%;background:var(--blue);color:var(--paper);border:none;padding:14px;font-size:13px;letter-spacing:.15em;text-transform:uppercase;border-radius:2px;transition:background .2s}
 .gate-btn:hover{background:#255a5e}
+.gate-btn.ghost{background:transparent;color:var(--blue);border:1px solid var(--line);margin-top:10px}
 .gate-err{color:var(--bad);font-size:12.5px;margin-top:14px;min-height:18px}
-
-/* ══ APP ═══════════════════════════════════════════════════════════════ */
+.gate-info{color:var(--cactus);font-size:12px;margin-top:12px;min-height:16px}
+.hidden{display:none!important}
 #app{display:none;min-height:100vh}
 header.top{background:var(--blue);color:var(--paper);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
-.top h1{font-size:20px;font-weight:900;letter-spacing:.01em}
-.top .who{font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.85;display:flex;align-items:center;gap:14px}
+.top h1{font-size:20px;font-weight:900}
+.top .who{font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.9;display:flex;align-items:center;gap:14px}
 .top .who button{background:transparent;border:1px solid rgba(255,255,255,.4);color:var(--paper);padding:5px 12px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border-radius:2px}
 nav.tabs{background:var(--blue);border-top:1px solid rgba(255,255,255,.12);padding:0 12px;display:flex;gap:2px;overflow-x:auto}
 nav.tabs button{background:transparent;border:none;color:rgba(255,255,255,.7);padding:12px 18px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;border-bottom:3px solid transparent;white-space:nowrap}
 nav.tabs button.active{color:var(--paper);border-bottom-color:var(--gold)}
 main{max-width:1080px;margin:0 auto;padding:26px 18px 80px}
 .view{display:none}.view.active{display:block}
-
-/* ── controles ── */
 .ctl{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:22px}
 .ctl label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--cactus)}
 select{font-family:var(--mono);font-size:14px;padding:9px 12px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:2px;outline:none}
 select:focus{border-color:var(--blue)}
-
-/* ── daily report ── */
 .section-eyebrow{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--cactus);margin:26px 0 10px}
 .dr-table{width:100%;border-collapse:collapse;font-size:13.5px}
 .dr-table td{padding:9px 10px;border-bottom:1px solid var(--line)}
@@ -64,56 +58,59 @@ select:focus{border-color:var(--blue)}
 .dr-table tr.sub td.lbl{padding-left:24px;color:var(--cactus)}
 .dr-table tr.total td{background:var(--wool);font-weight:600;border-top:2px solid var(--blue);border-bottom:none}
 .dr-table tr.total td.lbl{letter-spacing:.05em;text-transform:uppercase;font-size:12px}
-
-/* ── kpi cards ── */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:8px}
 .kpi{background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:2px;padding:15px 16px}
 .kpi .k-lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--cactus);margin-bottom:6px}
 .kpi .k-val{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
 .kpi .k-sub{font-size:11px;color:var(--cactus);margin-top:2px}
-
-/* ── tablas de auditoría ── */
 .aud{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
-.aud th{background:var(--cactus);color:var(--paper);text-align:left;padding:9px 11px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;position:sticky;top:0}
+.aud th{background:var(--cactus);color:var(--paper);text-align:left;padding:9px 11px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:500}
 .aud td{padding:8px 11px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
 .aud tr:hover td{background:#efe9d8}
 .aud td.num{text-align:right}
 .aud .inactivo td{background:#e6e2d5;color:#8a8578}
 .aud .clickrow{cursor:pointer}
 .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
-.pill.void{background:#f2d6dc;color:var(--bad)}
-.pill.adj{background:#f2e6cf;color:var(--warn)}
-.badge{font-size:16px}
-.sem-ok{color:var(--ok)}.sem-warn{color:var(--warn)}.sem-bad{color:var(--bad)}
-
-/* ── estados ── */
+.pill.void{background:#f2d6dc;color:var(--bad)} .pill.adj{background:#f2e6cf;color:var(--warn)}
+.badge{font-size:16px}.sem-ok{color:var(--ok)}.sem-warn{color:var(--warn)}.sem-bad{color:var(--bad)}
+.cap-form{background:#fff;border:1px solid var(--line);border-radius:3px;padding:24px;max-width:560px}
+.cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.cap-grid .fld{margin-bottom:0}
+.cap-full{grid-column:1/-1}
+.cap-btn{background:var(--blue);color:var(--paper);border:none;padding:13px 24px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;border-radius:2px}
+.cap-btn:hover{background:#255a5e}
+.just-input{width:100%;font-family:var(--mono);font-size:13px;padding:8px;border:1px solid var(--line);border-radius:2px;resize:vertical;min-height:40px}
+.just-btn{background:var(--purple);color:#fff;border:none;padding:6px 12px;font-size:11px;border-radius:2px;margin-top:5px;letter-spacing:.06em}
 .loading,.empty{text-align:center;padding:50px 20px;color:var(--cactus);font-size:13px}
 .spinner{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .errbox{background:#f2d6dc;border:1px solid var(--bad);color:var(--bad);padding:14px 16px;border-radius:2px;font-size:13px;margin:20px 0}
-
+.okmsg{background:#e0efe0;border:1px solid var(--ok);color:var(--ok);padding:10px 14px;border-radius:2px;font-size:13px;margin:12px 0}
 .note{font-size:11.5px;color:var(--cactus);margin-top:18px;font-style:italic}
-@media(max-width:560px){
-  .dr-table td{padding:8px 6px;font-size:12.5px}
-  main{padding:20px 12px 70px}
-}
+@media(max-width:560px){.dr-table td{padding:8px 6px;font-size:12.5px}main{padding:20px 12px 70px}.cap-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-
-<!-- ══ LOGIN ══ -->
 <div id="gate">
   <div class="gate-card">
     <div class="gate-eyebrow">Puerto Escondido · Oaxaca</div>
     <h1>Casa Yuma</h1>
     <div class="gate-sub">Portal de Administración y Auditoría</div>
-    <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="• • • •" autocomplete="off">
+    <div id="step1">
+      <div class="fld"><label>Colaborador</label><select id="userSel"></select></div>
+      <div class="fld"><label>Número de colaborador</label><input id="userId" type="text" placeholder="CY000" autocomplete="off"></div>
+      <button class="gate-btn" onclick="identificar()">Continuar</button>
+    </div>
+    <div id="step2" class="hidden">
+      <div class="fld"><label id="pinLabel">Tu PIN</label><input id="pinInput" class="pin" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off"></div>
+      <div id="pinInput2wrap" class="fld hidden"><label>Confirma tu PIN</label><input id="pinInput2" class="pin" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off"></div>
+      <button class="gate-btn" id="pinBtn" onclick="pinSubmit()">Entrar</button>
+      <button class="gate-btn ghost" onclick="volverStep1()">← Cambiar colaborador</button>
+    </div>
     <div class="gate-err" id="gateErr"></div>
-    <button class="gate-btn" onclick="tryLogin()">Entrar</button>
+    <div class="gate-info" id="gateInfo"></div>
   </div>
 </div>
-
-<!-- ══ APP ══ -->
 <div id="app">
   <header class="top">
     <h1>Casa Yuma · Auditoría</h1>
@@ -121,167 +118,92 @@ select:focus{border-color:var(--blue)}
   </header>
   <nav class="tabs" id="tabs"></nav>
   <main>
-    <!-- Daily Report -->
-    <section class="view" id="v-daily">
-      <div class="ctl">
-        <label for="daySel">Fecha</label>
-        <select id="daySel" onchange="renderDaily()"></select>
-      </div>
-      <div id="dailyBody"></div>
-    </section>
-
-    <!-- Ajustes -->
-    <section class="view" id="v-ajustes">
-      <div id="ajustesBody"><div class="loading"><div class="spinner"></div>Cargando ajustes…</div></div>
-    </section>
-
-    <!-- Control mensual -->
-    <section class="view" id="v-control">
-      <div id="controlBody"><div class="loading"><div class="spinner"></div>Cargando control…</div></div>
-    </section>
+    <section class="view" id="v-daily"><div class="ctl"><label for="daySel">Fecha</label><select id="daySel" onchange="renderDaily()"></select></div><div id="dailyBody"></div></section>
+    <section class="view" id="v-captura"><div id="capturaBody"></div></section>
+    <section class="view" id="v-ajustes"><div id="ajustesBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
+    <section class="view" id="v-control"><div id="controlBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
   </main>
 </div>
-
 <script>
-/* ═══════════════════════════════════════════════════════════════════════
-   CONFIG — llena esto con TUS datos
-   ═══════════════════════════════════════════════════════════════════════ */
-const CONFIG = {
-  // URL del Web App (Apps Script). La hoja queda PRIVADA; el Web App valida el PIN.
-  WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbwCCOV67OLeA89YbZyZ0xYxH57Bu313wgRAyGtz8jtF8omp76NCknGsmt8PNs_hi0I/exec',
-  // usuarios que ya no están (se marcan en gris, siguen contando)
-  INACTIVOS: ['Mackye Hirashi','Cinthya Quiñones','Yunuen Balderrama','Esther Díaz'],
+const CONFIG={
+  WEBAPP_URL:'https://script.google.com/macros/s/AKfycbwCCOV67OLeA89YbZyZ0xYxH57Bu313wgRAyGtz8jtF8omp76NCknGsmt8PNs_hi0I/exec',
+  USERS:[
+    {id:'CY035',n:'Aida Carrillo Patiño'},{id:'CY037',n:'Omar Emiliano de la Tejera Zamorano'},
+    {id:'CY038',n:'Rodolfo Ramirez Pérez'},{id:'CY057',n:'Arleth Paola Anicacio Antúnez'},
+    {id:'CY039',n:'Jesus Israel Castillo Hernández'},{id:'CY001',n:'Manuel Arturo Otazo Aponte'},
+    {id:'CY064',n:'Jorge Guillén Garbuno'},{id:'CY070',n:'América Arróniz'},{id:'CY999',n:'Growthbis'},
+  ],
+  INACTIVOS:['Mackye Hirashi','Cinthya Quiñones','Yunuen Balderrama','Esther Díaz'],
 };
-
-/* ═══ utilidades ═══ */
-const money = n => (isNaN(n)||n===''||n==null) ? '–' : Number(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
-const int   = n => (isNaN(n)||n==='') ? '–' : Number(n).toLocaleString('es-MX');
-const num = v => { const x=parseFloat(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(x)?0:x; };
-
-// pide una vista al Web App (con el PIN de la sesión). Devuelve las filas.
-async function pedirVista(vista){
-  const url = CONFIG.WEBAPP_URL + '?pin=' + encodeURIComponent(SESSION.pin) + '&vista=' + vista;
-  const res = await fetch(url);
-  const j = await res.json();
-  if(!j.ok) throw new Error(j.error || 'Error al leer datos.');
-  return j.filas || [];
-}
-const MESES={ene:0,jan:0,feb:1,mar:2,abr:3,apr:3,may:4,jun:5,jul:6,ago:7,aug:7,sep:8,oct:9,nov:10,dic:11,dec:11};
-// intenta sacar {y,m,d} de una etiqueta de fecha (dd-Mmm, yyyy-mm-dd, dd/mm/yyyy)
-function parseFecha(s){
-  s=String(s).trim(); if(!s) return null;
-  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return {y:+m[1],m:+m[2]-1,d:+m[3]};
-  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/); if(m) return {y:+m[3]<100?2000+ +m[3]:+m[3],m:+m[2]-1,d:+m[1]};
-  m=s.match(/^(\d{1,2})[\-\s]([A-Za-z]{3})/); if(m){const mm=MESES[m[2].toLowerCase()]; if(mm!=null) return {y:2026,m:mm,d:+m[1]};}
-  return null;
-}
-
-/* ═══ LOGIN ═══ */
-let SESSION=null;
-document.getElementById('pin').addEventListener('keydown',e=>{ if(e.key==='Enter')tryLogin(); });
-async function tryLogin(){
-  const pin=document.getElementById('pin').value.trim();
-  const errEl=document.getElementById('gateErr');
-  if(!pin){ errEl.textContent='Escribe tu PIN.'; return; }
-  errEl.textContent='Validando…';
+const money=n=>(isNaN(n)||n===''||n==null)?'–':Number(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+const int=n=>(isNaN(n)||n==='')?'–':Number(n).toLocaleString('es-MX');
+const num=v=>{const x=parseFloat(String(v).replace(/[^0-9.\-]/g,''));return isNaN(x)?0:x;};
+let SESSION=null,PENDING=null;
+(function(){const sel=document.getElementById('userSel');CONFIG.USERS.forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=u.n;sel.appendChild(o);});sel.onchange=()=>{document.getElementById('userId').value=sel.value;};document.getElementById('userId').value=sel.value;})();
+async function apiGet(params){const qs=Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&');const res=await fetch(CONFIG.WEBAPP_URL+'?'+qs);return res.json();}
+async function apiPost(body){const res=await fetch(CONFIG.WEBAPP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});return res.json();}
+async function identificar(){
+  const id=document.getElementById('userId').value.trim().toUpperCase();
+  const err=document.getElementById('gateErr'),info=document.getElementById('gateInfo');
+  err.textContent='';info.textContent='Verificando…';
   try{
-    const res=await fetch(CONFIG.WEBAPP_URL+'?pin='+encodeURIComponent(pin)+'&vista=login');
-    const j=await res.json();
-    if(!j.ok){ errEl.textContent=j.error||'PIN incorrecto.'; return; }
-    SESSION={ pin:pin, role:j.role, level:j.level };
-    document.getElementById('gate').style.display='none';
-    document.getElementById('app').style.display='block';
-    document.getElementById('whoLabel').textContent=j.role;
-    buildTabs();
-    loadAll();
-  }catch(e){ errEl.textContent='No se pudo conectar. Revisa tu internet.'; }
+    const j=await apiGet({accion:'login',id:id});
+    if(!j.ok){info.textContent='';err.textContent=j.error;return;}
+    PENDING={id:j.id,nombre:j.nombre,nivel:j.nivel,tienePin:j.tienePin};info.textContent='';
+    document.getElementById('step1').classList.add('hidden');document.getElementById('step2').classList.remove('hidden');
+    if(j.tienePin){document.getElementById('pinLabel').textContent='Tu PIN · '+j.nombre.split(' ')[0];document.getElementById('pinInput2wrap').classList.add('hidden');document.getElementById('pinBtn').textContent='Entrar';}
+    else{document.getElementById('pinLabel').textContent='Crea tu PIN · '+j.nombre.split(' ')[0];document.getElementById('pinInput2wrap').classList.remove('hidden');document.getElementById('pinBtn').textContent='Crear PIN y entrar';info.textContent='Primera vez: define un PIN de 4 a 6 dígitos.';}
+    document.getElementById('pinInput').focus();
+  }catch(e){info.textContent='';err.textContent='No se pudo conectar.';}
 }
-function logout(){ location.reload(); }
-
-/* ═══ TABS según nivel ═══ */
+function volverStep1(){document.getElementById('step2').classList.add('hidden');document.getElementById('step1').classList.remove('hidden');document.getElementById('gateErr').textContent='';document.getElementById('gateInfo').textContent='';document.getElementById('pinInput').value='';document.getElementById('pinInput2').value='';}
+async function pinSubmit(){
+  const pin=document.getElementById('pinInput').value.trim();const err=document.getElementById('gateErr');err.textContent='';
+  if(!/^\d{4,6}$/.test(pin)){err.textContent='El PIN debe ser de 4 a 6 dígitos.';return;}
+  try{
+    let j;
+    if(PENDING.tienePin){j=await apiGet({accion:'entrar',id:PENDING.id,pin:pin});}
+    else{const pin2=document.getElementById('pinInput2').value.trim();if(pin!==pin2){err.textContent='Los PIN no coinciden.';return;}j=await apiPost({accion:'crearPin',id:PENDING.id,pin:pin});}
+    if(!j.ok){err.textContent=j.error;return;}
+    SESSION={id:PENDING.id,pin:pin,nombre:j.nombre||PENDING.nombre,nivel:j.nivel||PENDING.nivel};entrarApp();
+  }catch(e){err.textContent='No se pudo conectar.';}
+}
+document.getElementById('pinInput').addEventListener('keydown',e=>{if(e.key==='Enter')pinSubmit();});
+document.getElementById('pinInput2').addEventListener('keydown',e=>{if(e.key==='Enter')pinSubmit();});
+document.getElementById('userId').addEventListener('keydown',e=>{if(e.key==='Enter')identificar();});
+function entrarApp(){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';document.getElementById('whoLabel').textContent=SESSION.nombre+' · '+SESSION.nivel.toUpperCase();buildTabs();loadAll();}
+function logout(){location.reload();}
 const TABDEFS=[
-  {id:'daily',   label:'Daily Report', level:'read'},
-  {id:'ajustes', label:'Ajustes & Anulaciones', level:'full'},
-  {id:'control', label:'Control mensual', level:'full'},
+  {id:'daily',label:'Daily Report',levels:['read','capture','full']},
+  {id:'captura',label:'Cuadre diario',levels:['capture','full']},
+  {id:'ajustes',label:'Ajustes & Anulaciones',levels:['full']},
+  {id:'control',label:'Control mensual',levels:['full']},
 ];
-function buildTabs(){
-  const tabs=document.getElementById('tabs'); tabs.innerHTML='';
-  const allowed=TABDEFS.filter(t=> SESSION.level==='full' || t.level==='read');
-  allowed.forEach((t,i)=>{
-    const b=document.createElement('button');
-    b.textContent=t.label; b.dataset.view=t.id;
-    if(i===0)b.classList.add('active');
-    b.onclick=()=>switchView(t.id,b);
-    tabs.appendChild(b);
-  });
-  switchView(allowed[0].id, tabs.querySelector('button'));
-}
-function switchView(id,btn){
-  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('v-'+id).classList.add('active');
-}
-
-/* ═══ carga de datos ═══ */
+function buildTabs(){const tabs=document.getElementById('tabs');tabs.innerHTML='';const allowed=TABDEFS.filter(t=>t.levels.includes(SESSION.nivel));allowed.forEach((t,i)=>{const b=document.createElement('button');b.textContent=t.label;b.dataset.view=t.id;if(i===0)b.classList.add('active');b.onclick=()=>switchView(t.id,b);tabs.appendChild(b);});switchView(allowed[0].id,tabs.querySelector('button'));}
+function switchView(id,btn){document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('v-'+id).classList.add('active');}
 let DATA={captura:null,ajustes:null,control:null};
 async function loadAll(){
-  // Daily (todos)
-  try{ DATA.captura=await pedirVista('captura'); initDaily(); }
-  catch(e){ document.getElementById('dailyBody').innerHTML=`<div class="errbox">${e.message}</div>`; }
-  // Auditoría (solo full)
-  if(SESSION.level==='full'){
-    try{ DATA.ajustes=await pedirVista('ajustes'); renderAjustes(); }
-    catch(e){ document.getElementById('ajustesBody').innerHTML=`<div class="errbox">${e.message}</div>`; }
-    try{ DATA.control=await pedirVista('control'); renderControl(); }
-    catch(e){ document.getElementById('controlBody').innerHTML=`<div class="errbox">${e.message}</div>`; }
+  try{const j=await apiGet({accion:'captura',id:SESSION.id,pin:SESSION.pin});if(j.ok){DATA.captura=j.filas;initDaily();}else throw new Error(j.error);}
+  catch(e){document.getElementById('dailyBody').innerHTML=`<div class="errbox">${e.message}</div>`;}
+  if(SESSION.nivel==='capture'||SESSION.nivel==='full')renderCaptura();
+  if(SESSION.nivel==='full'){
+    try{const j=await apiGet({accion:'ajustes',id:SESSION.id,pin:SESSION.pin});if(j.ok){DATA.ajustes=j.filas;renderAjustes();}}
+    catch(e){document.getElementById('ajustesBody').innerHTML=`<div class="errbox">${e.message}</div>`;}
+    try{const j=await apiGet({accion:'control',id:SESSION.id,pin:SESSION.pin});if(j.ok){DATA.control=j.filas;renderControl();}}
+    catch(e){document.getElementById('controlBody').innerHTML=`<div class="errbox">${e.message}</div>`;}
   }
 }
-
-/* ═══ DAILY REPORT (lee CAPTURA) ═══
-   Columnas CAPTURA (0-based): A0 Fecha, B1 Ocupadas, C2 Cortesía, D3 UsoCasa,
-   E4 Intercambio, G6 TotalCtos, H7 IngresoHab, I8 %Ocup, J9 ADR, K10 RevPAR,
-   L11 Spa, M12 Lavandería, N13 Transporte, O14 DayPass, P15 Surf, Q16 Misc,
-   R17 TotalDivCuartos, S18 RestAlim, T19 RestBeb, U20 TotalRest, V21 Pax */
 let CAP_ROWS=[];
-function initDaily(){
-  const rows=DATA.captura;
-  // datos desde la fila donde A parsea fecha
-  CAP_ROWS=rows.filter(r=> parseFecha(r[0]) );
-  const sel=document.getElementById('daySel'); sel.innerHTML='';
-  // más reciente primero
-  CAP_ROWS.slice().reverse().forEach((r,idx)=>{
-    const realIdx=CAP_ROWS.length-1-idx;
-    const o=document.createElement('option'); o.value=realIdx; o.textContent=r[0];
-    sel.appendChild(o);
-  });
-  renderDaily();
-}
+const MESES={ene:0,jan:0,feb:1,mar:2,abr:3,apr:3,may:4,jun:5,jul:6,ago:7,aug:7,sep:8,oct:9,nov:10,dic:11,dec:11};
+function parseFecha(s){s=String(s).trim();if(!s)return null;let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return{y:+m[1],m:+m[2]-1,d:+m[3]};m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);if(m)return{y:+m[3]<100?2000+ +m[3]:+m[3],m:+m[2]-1,d:+m[1]};m=s.match(/^(\d{1,2})[\-\s]([A-Za-z]{3})/);if(m){const mm=MESES[m[2].toLowerCase()];if(mm!=null)return{y:2026,m:mm,d:+m[1]};}return null;}
+function initDaily(){CAP_ROWS=DATA.captura.filter(r=>parseFecha(r[0]));const sel=document.getElementById('daySel');sel.innerHTML='';CAP_ROWS.slice().reverse().forEach((r,idx)=>{const realIdx=CAP_ROWS.length-1-idx;const o=document.createElement('option');o.value=realIdx;o.textContent=r[0];sel.appendChild(o);});renderDaily();}
 function renderDaily(){
-  if(!CAP_ROWS.length){ document.getElementById('dailyBody').innerHTML='<div class="empty">Sin datos.</div>'; return; }
-  const i=+document.getElementById('daySel').value||0;
-  const r=CAP_ROWS[i];
-  const g=k=>r[k]!==undefined?r[k]:'';
-  // MTD: suma del mes hasta la fecha seleccionada
-  const fSel=parseFecha(r[0]);
-  let mtd={ocup:0,ing:0,alim:0,beb:0,pax:0,div:0};
-  if(fSel){
-    CAP_ROWS.forEach(rr=>{ const f=parseFecha(rr[0]);
-      if(f&&f.m===fSel.m&&f.y===fSel.y&&f.d<=fSel.d){
-        mtd.ocup+=num(rr[1]); mtd.ing+=num(rr[7]); mtd.alim+=num(rr[18]);
-        mtd.beb+=num(rr[19]); mtd.pax+=num(rr[21]); mtd.div+=num(rr[17]);
-      }});
-  }
-  const kpis=`<div class="kpis">
-    <div class="kpi"><div class="k-lbl">Ingreso habitaciones</div><div class="k-val">$${money(num(g(7)))}</div><div class="k-sub">MTD $${money(mtd.ing)}</div></div>
-    <div class="kpi"><div class="k-lbl">Ocupación</div><div class="k-val">${g(8)||'–'}</div><div class="k-sub">${int(num(g(1)))} vendidas</div></div>
-    <div class="kpi"><div class="k-lbl">ADR</div><div class="k-val">$${money(num(g(9)))}</div></div>
-    <div class="kpi"><div class="k-lbl">RevPAR</div><div class="k-val">$${money(num(g(10)))}</div></div>
-  </div>`;
-
-  const dr=`
-  <div class="section-eyebrow">Daily Report · ${g(0)}</div>
-  <table class="dr-table">
+  if(!CAP_ROWS.length){document.getElementById('dailyBody').innerHTML='<div class="empty">Sin datos.</div>';return;}
+  const i=+document.getElementById('daySel').value||0;const r=CAP_ROWS[i];const g=k=>r[k]!==undefined?r[k]:'';
+  const fSel=parseFecha(r[0]);let mtd={ocup:0,ing:0,alim:0,beb:0,pax:0,div:0};
+  if(fSel)CAP_ROWS.forEach(rr=>{const f=parseFecha(rr[0]);if(f&&f.m===fSel.m&&f.y===fSel.y&&f.d<=fSel.d){mtd.ocup+=num(rr[1]);mtd.ing+=num(rr[7]);mtd.alim+=num(rr[18]);mtd.beb+=num(rr[19]);mtd.pax+=num(rr[21]);mtd.div+=num(rr[17]);}});
+  const kpis=`<div class="kpis"><div class="kpi"><div class="k-lbl">Ingreso habitaciones</div><div class="k-val">$${money(num(g(7)))}</div><div class="k-sub">MTD $${money(mtd.ing)}</div></div><div class="kpi"><div class="k-lbl">Ocupación</div><div class="k-val">${g(8)||'–'}</div><div class="k-sub">${int(num(g(1)))} vendidas</div></div><div class="kpi"><div class="k-lbl">ADR</div><div class="k-val">$${money(num(g(9)))}</div></div><div class="kpi"><div class="k-lbl">RevPAR</div><div class="k-val">$${money(num(g(10)))}</div></div></div>`;
+  const dr=`<div class="section-eyebrow">Daily Report · ${g(0)}</div><table class="dr-table">
     <tr class="head"><td>Concepto</td><td class="val">Hoy</td><td class="val">MTD</td></tr>
     <tr><td class="lbl">Hab. ocupadas (vendidas)</td><td class="val">${int(num(g(1)))}</td><td class="val">${int(mtd.ocup)}</td></tr>
     <tr><td class="lbl">Hab. cortesía</td><td class="val">${int(num(g(2)))}</td><td class="val">–</td></tr>
@@ -292,7 +214,6 @@ function renderDaily(){
     <tr><td class="lbl">ADR</td><td class="val">$${money(num(g(9)))}</td><td class="val">–</td></tr>
     <tr><td class="lbl">RevPAR</td><td class="val">$${money(num(g(10)))}</td><td class="val">–</td></tr>
     <tr class="total"><td class="lbl">Total cuartos (ingreso)</td><td class="val">$${money(num(g(7)))}</td><td class="val">$${money(mtd.ing)}</td></tr>
-
     <tr class="head"><td>División cuartos</td><td class="val"></td><td class="val"></td></tr>
     <tr class="sub"><td class="lbl">Spa</td><td class="val">$${money(num(g(11)))}</td><td class="val">–</td></tr>
     <tr class="sub"><td class="lbl">Lavandería</td><td class="val">$${money(num(g(12)))}</td><td class="val">–</td></tr>
@@ -301,96 +222,65 @@ function renderDaily(){
     <tr class="sub"><td class="lbl">Clases de surf</td><td class="val">$${money(num(g(15)))}</td><td class="val">–</td></tr>
     <tr class="sub"><td class="lbl">Misceláneos</td><td class="val">$${money(num(g(16)))}</td><td class="val">–</td></tr>
     <tr class="total"><td class="lbl">Total división cuartos</td><td class="val">$${money(num(g(17)))}</td><td class="val">$${money(mtd.div)}</td></tr>
-
     <tr class="head"><td>Restaurante</td><td class="val"></td><td class="val"></td></tr>
     <tr class="sub"><td class="lbl">Alimentos</td><td class="val">$${money(num(g(18)))}</td><td class="val">$${money(mtd.alim)}</td></tr>
     <tr class="sub"><td class="lbl">Bebidas</td><td class="val">$${money(num(g(19)))}</td><td class="val">$${money(mtd.beb)}</td></tr>
     <tr class="total"><td class="lbl">Total restaurante</td><td class="val">$${money(num(g(20)))}</td><td class="val">$${money(mtd.alim+mtd.beb)}</td></tr>
     <tr><td class="lbl">No. Pax</td><td class="val">${int(num(g(21)))}</td><td class="val">${int(mtd.pax)}</td></tr>
-  </table>
-  <div class="note">Vista de solo lectura. Los datos se actualizan solos desde el sistema; refresca la página para la última versión.</div>`;
+  </table><div class="note">Vista de solo lectura. Refresca la página para la última versión.</div>`;
   document.getElementById('dailyBody').innerHTML=kpis+dr;
 }
-
-/* ═══ AJUSTES (lee AJUSTES) ═══
-   Cols: A0 FechaServ, C2 Tipo, D3 Concepto, E4 Monto, F5 Usuario, G6 Hab */
+function renderCaptura(){
+  const hoy=new Date().toISOString().slice(0,10);
+  document.getElementById('capturaBody').innerHTML=`<div class="section-eyebrow">Cuadre diario · captura</div>
+    <div class="cap-form"><div class="cap-grid">
+      <div class="fld cap-full"><label>Fecha del cuadre</label><input id="cFecha" type="date" value="${hoy}"></div>
+      <div class="fld"><label>Lote BBVA Front</label><input id="cLoteFront" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="fld"><label>Lote BBVA Restaurante</label><input id="cLoteRest" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="fld"><label>Arqueo efectivo Front</label><input id="cArqFront" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="fld"><label>Arqueo efectivo Restaurante</label><input id="cArqRest" type="number" step="0.01" placeholder="0.00"></div>
+    </div><button class="cap-btn" onclick="guardarCuadre()">Guardar cuadre</button><div id="cuadreMsg"></div></div>
+    <div class="note">El cuadre se compara automáticamente contra Cloudbeds y Poster en el sistema. Aquí capturas los totales de terminal y arqueo.</div>`;
+}
+async function guardarCuadre(){
+  const b={accion:'guardarCuadre',id:SESSION.id,pin:SESSION.pin,fecha:document.getElementById('cFecha').value,loteFront:document.getElementById('cLoteFront').value||0,loteRest:document.getElementById('cLoteRest').value||0,arqFront:document.getElementById('cArqFront').value||0,arqRest:document.getElementById('cArqRest').value||0};
+  const msg=document.getElementById('cuadreMsg');msg.innerHTML='Guardando…';
+  try{const j=await apiPost(b);if(!j.ok){msg.innerHTML=`<div class="errbox">${j.error}</div>`;return;}msg.innerHTML=`<div class="okmsg">Cuadre guardado para ${b.fecha}. El sistema lo validará contra Cloudbeds/Poster.</div>`;}
+  catch(e){msg.innerHTML=`<div class="errbox">No se pudo guardar.</div>`;}
+}
 function renderAjustes(){
-  const rows=DATA.ajustes.slice(1).filter(r=>r[5]); // sin header, con usuario
-  const inact=new Set(CONFIG.INACTIVOS);
-  // por usuario
-  const U={};
-  rows.forEach(r=>{
-    const u=r[5].trim(), tipo=(r[2]||'').toUpperCase(), m=Math.abs(num(r[4]));
-    if(!U[u])U[u]={aN:0,aM:0,vN:0,vM:0};
-    if(tipo==='VOID'){U[u].vN++;U[u].vM+=m;}else{U[u].aN++;U[u].aM+=m;}
-  });
+  const rows=DATA.ajustes.slice(1).filter(r=>r[5]);const inact=new Set(CONFIG.INACTIVOS);const U={};
+  rows.forEach(r=>{const u=String(r[5]).trim(),t=(r[2]||'').toUpperCase(),m=Math.abs(num(r[4]));if(!U[u])U[u]={aN:0,aM:0,vN:0,vM:0};if(t==='VOID'){U[u].vN++;U[u].vM+=m;}else{U[u].aN++;U[u].aM+=m;}});
   const users=Object.keys(U).sort((a,b)=>(U[b].aM+U[b].vM)-(U[a].aM+U[a].vM));
-  let rowsHtml=users.map(u=>{
-    const d=U[u], tot=d.aM+d.vM, cls=inact.has(u)?'inactivo clickrow':'clickrow';
-    const tag=inact.has(u)?' <span style="font-size:10px;opacity:.7">(inactivo)</span>':'';
-    return `<tr class="${cls}" onclick="detalleUsuario('${u.replace(/'/g,"\\'")}')">
-      <td>${u}${tag}</td>
-      <td class="num">${d.aN}</td><td class="num">$${money(d.aM)}</td>
-      <td class="num">${d.vN}</td><td class="num">$${money(d.vM)}</td>
-      <td class="num"><strong>$${money(tot)}</strong></td></tr>`;
-  }).join('');
-  document.getElementById('ajustesBody').innerHTML=`
-    <div class="section-eyebrow">Auditoría de ajustes y anulaciones · por usuario</div>
-    <table class="aud"><thead><tr>
-      <th>Usuario</th><th style="text-align:right"># Ajustes</th><th style="text-align:right">$ Ajustes</th>
-      <th style="text-align:right"># Voids</th><th style="text-align:right">$ Voids</th><th style="text-align:right">Total</th>
-    </tr></thead><tbody>${rowsHtml}</tbody></table>
-    <div class="note">Clic en un usuario para ver el detalle de sus movimientos.</div>
-    <div id="detBody"></div>`;
+  const body=users.map(u=>{const d=U[u],tot=d.aM+d.vM,cls=inact.has(u)?'inactivo clickrow':'clickrow',tag=inact.has(u)?' <span style="font-size:10px;opacity:.7">(inactivo)</span>':'';return `<tr class="${cls}" onclick="detalleUsuario('${u.replace(/'/g,"\\'")}')"><td>${u}${tag}</td><td class="num">${d.aN}</td><td class="num">$${money(d.aM)}</td><td class="num">${d.vN}</td><td class="num">$${money(d.vM)}</td><td class="num"><strong>$${money(tot)}</strong></td></tr>`;}).join('');
+  document.getElementById('ajustesBody').innerHTML=`<div class="section-eyebrow">Auditoría de ajustes y anulaciones · por usuario</div><table class="aud"><thead><tr><th>Usuario</th><th style="text-align:right"># Ajustes</th><th style="text-align:right">$ Ajustes</th><th style="text-align:right"># Voids</th><th style="text-align:right">$ Voids</th><th style="text-align:right">Total</th></tr></thead><tbody>${body}</tbody></table><div class="note">Clic en un usuario para ver el detalle y justificar.</div><div id="detBody"></div>`;
 }
 function detalleUsuario(u){
-  const rows=DATA.ajustes.slice(1).filter(r=> (r[5]||'').trim()===u );
+  const rows=DATA.ajustes.slice(1).filter(r=>String(r[5]||'').trim()===u);
   rows.sort((a,b)=>Math.abs(num(b[4]))-Math.abs(num(a[4])));
-  let total=0; rows.forEach(r=>total+=Math.abs(num(r[4])));
-  const body=rows.map(r=>{
-    const tipo=(r[2]||'').toUpperCase(), cls=tipo==='VOID'?'void':'adj';
-    return `<tr><td>${r[0]}</td><td><span class="pill ${cls}">${tipo}</span></td>
-      <td>${r[3]||''}</td><td class="num">$${money(Math.abs(num(r[4])))}</td><td>${r[6]||''}</td></tr>`;
-  }).join('');
-  document.getElementById('detBody').innerHTML=`
-    <div class="section-eyebrow">Detalle · ${u} · ${rows.length} movimientos · $${money(total)}</div>
-    <table class="aud"><thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th style="text-align:right">Monto</th><th>Habitación</th></tr></thead>
-    <tbody>${body}</tbody></table>`;
+  let total=0;rows.forEach(r=>total+=Math.abs(num(r[4])));
+  const body=rows.map(r=>{const t=(r[2]||'').toUpperCase(),cls=t==='VOID'?'void':'adj',idTx=r[8]||'';const just=r[9]||'',justBy=r[10]||'';
+    const justCell=just?`<div style="font-size:11px">${just}<br><span style="color:var(--cactus)">${justBy}</span></div>`:`<textarea class="just-input" id="j_${idTx}" placeholder="Justificación…"></textarea><button class="just-btn" onclick="justificar('${idTx}')">Guardar</button>`;
+    return `<tr><td>${r[0]}</td><td><span class="pill ${cls}">${t}</span></td><td>${r[3]||''}</td><td class="num">$${money(Math.abs(num(r[4])))}</td><td>${r[6]||''}</td><td style="min-width:200px">${justCell}</td></tr>`;}).join('');
+  document.getElementById('detBody').innerHTML=`<div class="section-eyebrow">Detalle · ${u} · ${rows.length} movimientos · $${money(total)}</div><table class="aud"><thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th style="text-align:right">Monto</th><th>Habitación</th><th>Justificación</th></tr></thead><tbody>${body}</tbody></table>`;
   document.getElementById('detBody').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
-
-/* ═══ CONTROL MENSUAL (lee CONTROL_LOG) ═══
-   Cols: A0 Fecha, 2 Term estado, 3 Cuartos estado, 5 Sinclasif estado,
-   6 EfFront, 7 EfRest, 9 Ajustes estado */
+async function justificar(idTx){
+  const el=document.getElementById('j_'+idTx);const texto=el.value.trim();
+  if(!texto){el.style.borderColor='var(--bad)';return;}
+  el.disabled=true;
+  try{const j=await apiPost({accion:'justificar',id:SESSION.id,pin:SESSION.pin,idTx:idTx,texto:texto});if(!j.ok){alert(j.error);el.disabled=false;return;}
+    const jj=await apiGet({accion:'ajustes',id:SESSION.id,pin:SESSION.pin});if(jj.ok)DATA.ajustes=jj.filas;
+    el.parentElement.innerHTML=`<div style="font-size:11px;color:var(--ok)">✓ ${texto}<br><span style="color:var(--cactus)">${SESSION.nombre}</span></div>`;
+  }catch(e){alert('No se pudo guardar.');el.disabled=false;}
+}
 function renderControl(){
-  const rows=DATA.control.slice(1).filter(r=>r[0]);
-  const M={};
-  rows.forEach(r=>{
-    const f=parseFecha(r[0]); if(!f)return;
-    const key=f.y+'-'+String(f.m+1).padStart(2,'0');
-    if(!M[key])M[key]={dias:0,term:0,cuartos:0,sc:0,eff:0,efr:0,aj:0};
-    const m=M[key]; m.dias++;
-    if(r[2]==='REVISAR')m.term++; if(r[3]==='REVISAR')m.cuartos++;
-    if(r[5]==='REVISAR')m.sc++; if(r[6]==='REVISAR')m.eff++;
-    if(r[7]==='REVISAR')m.efr++; if(r[9]==='REVISAR')m.aj++;
-  });
+  const rows=DATA.control.slice(1).filter(r=>r[0]);const M={};
+  rows.forEach(r=>{const f=parseFecha(r[0]);if(!f)return;const key=f.y+'-'+String(f.m+1).padStart(2,'0');if(!M[key])M[key]={dias:0,term:0,cuartos:0,sc:0,eff:0,efr:0,aj:0};const m=M[key];m.dias++;if(r[2]==='REVISAR')m.term++;if(r[3]==='REVISAR')m.cuartos++;if(r[5]==='REVISAR')m.sc++;if(r[6]==='REVISAR')m.eff++;if(r[7]==='REVISAR')m.efr++;if(r[9]==='REVISAR')m.aj++;});
   const keys=Object.keys(M).sort();
-  if(!keys.length){ document.getElementById('controlBody').innerHTML='<div class="empty">Aún no hay datos de control registrados.</div>'; return; }
-  const body=keys.map(k=>{
-    const m=M[k], tot=m.term+m.cuartos+m.sc+m.eff+m.efr+m.aj;
-    const sem= tot===0?'<span class="badge sem-ok">🟢</span>':tot<=3?'<span class="badge sem-warn">🟡</span>':'<span class="badge sem-bad">🔴</span>';
-    const cell=v=> v>0?`<td class="num" style="background:#f2d6dc;color:var(--bad)">${v}</td>`:`<td class="num">0</td>`;
-    return `<tr><td>${k}</td><td class="num">${m.dias}</td>${cell(m.term)}${cell(m.cuartos)}${cell(m.sc)}${cell(m.eff)}${cell(m.efr)}${cell(m.aj)}<td style="text-align:center">${sem}</td></tr>`;
-  }).join('');
-  document.getElementById('controlBody').innerHTML=`
-    <div class="section-eyebrow">Control mensual · días con foco rojo por tipo</div>
-    <table class="aud"><thead><tr>
-      <th>Mes</th><th style="text-align:right">Días</th><th style="text-align:right">Terminales</th>
-      <th style="text-align:right">Cuartos</th><th style="text-align:right">Sin clasif</th>
-      <th style="text-align:right">Efvo Front</th><th style="text-align:right">Efvo Rest</th>
-      <th style="text-align:right">Ajustes</th><th style="text-align:center">Semáforo</th>
-    </tr></thead><tbody>${body}</tbody></table>
-    <div class="note">Cada número = días de ese mes con foco rojo en ese cruce. Terminales y efectivo salen 0 si no se ha capturado el cuadre.</div>`;
+  if(!keys.length){document.getElementById('controlBody').innerHTML='<div class="empty">Sin datos de control aún.</div>';return;}
+  const body=keys.map(k=>{const m=M[k],tot=m.term+m.cuartos+m.sc+m.eff+m.efr+m.aj;const sem=tot===0?'<span class="badge sem-ok">🟢</span>':tot<=3?'<span class="badge sem-warn">🟡</span>':'<span class="badge sem-bad">🔴</span>';const cell=v=>v>0?`<td class="num" style="background:#f2d6dc;color:var(--bad)">${v}</td>`:`<td class="num">0</td>`;return `<tr><td>${k}</td><td class="num">${m.dias}</td>${cell(m.term)}${cell(m.cuartos)}${cell(m.sc)}${cell(m.eff)}${cell(m.efr)}${cell(m.aj)}<td style="text-align:center">${sem}</td></tr>`;}).join('');
+  document.getElementById('controlBody').innerHTML=`<div class="section-eyebrow">Control mensual · días con foco rojo por tipo</div><table class="aud"><thead><tr><th>Mes</th><th style="text-align:right">Días</th><th style="text-align:right">Terminales</th><th style="text-align:right">Cuartos</th><th style="text-align:right">Sin clasif</th><th style="text-align:right">Efvo Front</th><th style="text-align:right">Efvo Rest</th><th style="text-align:right">Ajustes</th><th style="text-align:center">Semáforo</th></tr></thead><tbody>${body}</tbody></table><div class="note">Cada número = días de ese mes con foco rojo. Terminales/efectivo salen 0 si no se ha capturado el cuadre.</div>`;
 }
 </script>
 </body>
