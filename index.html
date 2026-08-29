@@ -183,9 +183,11 @@ const TABDEFS=[
 ];
 function buildTabs(){const tabs=document.getElementById('tabs');tabs.innerHTML='';const allowed=TABDEFS.filter(t=>t.levels.includes(SESSION.nivel));allowed.forEach((t,i)=>{const b=document.createElement('button');b.textContent=t.label;b.dataset.view=t.id;if(i===0)b.classList.add('active');b.onclick=()=>switchView(t.id,b);tabs.appendChild(b);});switchView(allowed[0].id,tabs.querySelector('button'));}
 function switchView(id,btn){document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('v-'+id).classList.add('active');}
-let DATA={captura:null,ajustes:null,control:null};
+let DATA={captura:null,ajustes:null,control:null,presupuesto:null};
 async function loadAll(){
-  try{const j=await apiGet({accion:'captura',id:SESSION.id,pin:SESSION.pin});if(j.ok){DATA.captura=j.filas;initDaily();}else throw new Error(j.error);}
+  try{const j=await apiGet({accion:'captura',id:SESSION.id,pin:SESSION.pin});if(j.ok){DATA.captura=j.filas;} else throw new Error(j.error);
+    try{const jp=await apiGet({accion:'presupuesto',id:SESSION.id,pin:SESSION.pin});if(jp.ok)DATA.presupuesto=jp.filas;}catch(_){}
+    initDaily();}
   catch(e){document.getElementById('dailyBody').innerHTML=`<div class="errbox">${e.message}</div>`;}
   if(SESSION.nivel==='capture'||SESSION.nivel==='full')renderCaptura();
   if(SESSION.nivel==='full'){
@@ -217,16 +219,34 @@ function renderDaily(){
   const chqMTD  = mtd[36]>0 ? (mtd[35]/mtd[36]) : 0; // cheque prom A&B
   const chqYTD  = ytd[36]>0 ? (ytd[35]/ytd[36]) : 0;
 
+  // ── PRESUPUESTO del mes seleccionado (busca concepto por nombre en col 0) ──
+  const mesCol = fSel ? (fSel.m+1) : 0; // Ene=col1 ... Dic=col12
+  function pptoDe(nombre){
+    if(!DATA.presupuesto||!mesCol) return null;
+    const norm=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,'');
+    const target=norm(nombre);
+    for(let k=1;k<DATA.presupuesto.length;k++){
+      if(norm(DATA.presupuesto[k][0])===target) return num(DATA.presupuesto[k][mesCol]);
+    }
+    return null;
+  }
+
+
   // fila: label, colDia (índice o valor), tipo. tipo: 'm'=money, 'i'=int, 'raw'=texto tal cual (ADR/%), 'calc'
   const M=(c)=>'$'+money(num(g(c)));
   const I=(c)=>int(num(g(c)));
   const cell=(v)=>`<td class="val">${v}</td>`;
-  const emptyBudget=`<td class="val" style="color:#c9c0a8">–</td><td class="val" style="color:#c9c0a8">–</td>`;
-
-  // helpers para armar filas con las 5 columnas
-  function fMoney(lbl,c,cls){ return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(M(c))}${cell('$'+money(mtd[c]))}${emptyBudget}${cell('$'+money(ytd[c]))}</tr>`; }
-  function fInt(lbl,c,cls){ return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(I(c))}${cell(int(mtd[c]))}${emptyBudget}${cell(int(ytd[c]))}</tr>`; }
-  function fRaw(lbl,valDia,valMtd,valYtd,cls){ return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(valDia)}${cell(valMtd)}${emptyBudget}${cell(valYtd)}</tr>`; }
+  // celda de variación: MTD real vs Ppto del mes. Verde si >=, rojo si <.
+  function varCells(realMtd, ppto){
+    if(ppto==null||ppto===0) return `<td class="val" style="color:#c9c0a8">–</td><td class="val" style="color:#c9c0a8">–</td>`;
+    const dif=realMtd-ppto; const pctv=(dif/ppto)*100;
+    const col=dif>=0?'var(--ok)':'var(--bad)'; const sg=dif>=0?'+':'';
+    return `<td class="val">$${money(ppto)}</td><td class="val" style="color:${col}">${sg}${money(dif)}<br><span style="font-size:10px">${sg}${pctv.toFixed(1)}%</span></td>`;
+  }
+  // helpers de fila con Ppto+Variación (por nombre de concepto para buscar el ppto)
+  function fMoney(lbl,c,cls,pptoNombre){ const pp=pptoDe(pptoNombre||lbl); return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(M(c))}${cell('$'+money(mtd[c]))}${varCells(mtd[c],pp)}${cell('$'+money(ytd[c]))}</tr>`; }
+  function fInt(lbl,c,cls){ return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(I(c))}${cell(int(mtd[c]))}<td class="val" style="color:#c9c0a8">–</td><td class="val" style="color:#c9c0a8">–</td>${cell(int(ytd[c]))}</tr>`; }
+  function fRaw(lbl,valDia,valMtd,valYtd,cls){ return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(valDia)}${cell(valMtd)}<td class="val" style="color:#c9c0a8">–</td><td class="val" style="color:#c9c0a8">–</td>${cell(valYtd)}</tr>`; }
   function head(t){ return `<tr class="head"><td>${t}</td><td class="val">Hoy</td><td class="val">MTD</td><td class="val">Ppto</td><td class="val">Var</td><td class="val">YTD</td></tr>`; }
 
   const kpis=`<div class="kpis">
@@ -248,20 +268,20 @@ function renderDaily(){
     ${fRaw('% Ocupación', pct(g(8)),'–','–')}
     ${fRaw('ADR', '$'+money(num(g(9))), '$'+money(ocupMTD), '$'+money(ocupYTD))}
     ${fRaw('RevPAR', '$'+money(num(g(10))), '–','–')}
-    ${fMoney('Total cuartos (ingreso)',7,'total')}
+    ${fMoney('Total cuartos (ingreso)',7,'total','Total Cuartos (Ingreso Hab.)')}
 
     ${head('División cuartos')}
-    ${fMoney('Spa',11,'sub')}
-    ${fMoney('Lavandería',12,'sub')}
-    ${fMoney('Transportación (La Ola)',13,'sub')}
-    ${fMoney('Day Pass',14,'sub')}
-    ${fMoney('Clases de surf',15,'sub')}
-    ${fMoney('Misceláneos',16,'sub')}
-    ${fMoney('Total división cuartos',17,'total')}
+    ${fMoney('Spa',11,'sub','Spa')}
+    ${fMoney('Lavandería',12,'sub','Lavandería')}
+    ${fMoney('Transportación (La Ola)',13,'sub','Transportación (La Ola)')}
+    ${fMoney('Day Pass',14,'sub','Day Pass')}
+    ${fMoney('Clases de surf',15,'sub','Clases de Surf')}
+    ${fMoney('Misceláneos',16,'sub','Misceláneos')}
+    ${fMoney('Total división cuartos',17,'total','TOTAL DIVISIÓN CUARTOS')}
 
     ${head('Restaurante')}
-    ${fMoney('Alimentos',18,'sub')}
-    ${fMoney('Bebidas',19,'sub')}
+    ${fMoney('Alimentos',18,'sub','Restaurante Alimentos')}
+    ${fMoney('Bebidas',19,'sub','Restaurante Bebidas')}
     ${fMoney('Total restaurante',20,'total')}
     ${fInt('No. Pax',21)}
 
@@ -270,26 +290,26 @@ function renderDaily(){
     ${fMoney('Bebidas',23,'sub')}
     ${fMoney('Renta',24,'sub')}
     ${fMoney('Extras',25,'sub')}
-    ${fMoney('Total eventos',26,'total')}
+    ${fMoney('Total eventos',26,'total','Total Eventos')}
     ${fInt('No. Pax',27)}
 
     ${head('Minibar')}
     ${fMoney('Alimentos',28,'sub')}
     ${fMoney('Bebidas',29,'sub')}
     ${fMoney('Tabaquería / Otros',30,'sub')}
-    ${fMoney('Total minibar',31,'total')}
+    ${fMoney('Total minibar',31,'total','Total Minibar')}
     ${fInt('No. Pax',32)}
 
     ${head('Otros')}
-    ${fMoney('Cigarros',33,'sub')}
-    ${fMoney('Shop / Boutique',34,'sub')}
+    ${fMoney('Cigarros',33,'sub','Cigarros')}
+    ${fMoney('Shop / Boutique',34,'sub','Shop / Boutique')}
 
     ${head('Totales')}
-    ${fMoney('Total A&B',35,'total')}
+    ${fMoney('Total A&B',35,'total','TOTAL A&B')}
     ${fInt('A&B No. Pax',36)}
     ${fRaw('Cheque promedio A&B', '$'+money(num(g(37))), '$'+money(chqMTD), '$'+money(chqYTD))}
     ${fRaw('RevPAR (A&B + Hab)', '$'+money(num(g(38))), '–','–')}
-    ${fMoney('TOTAL HOTEL',39,'total')}
+    ${fMoney('TOTAL HOTEL',39,'total','TOTAL HOTEL')}
   </table>
   <div class="note">MTD = mes en curso hasta la fecha · YTD = año hasta la fecha. Presupuesto y Variación se agregan al conectar la pestaña PRESUPUESTO. Los indicadores (%, ADR, RevPAR, cheque) se recalculan, no se suman.</div>`;
   document.getElementById('dailyBody').innerHTML=kpis+t;
