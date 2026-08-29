@@ -295,7 +295,9 @@ function renderDaily(){
   function fRaw(lbl,valDia,valMtd,valYtd,cls){ return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(valDia)}${cell(valMtd)}<td class="val" style="color:#c9c0a8">–</td><td class="val" style="color:#c9c0a8">–</td>${cell(valYtd)}</tr>`; }
   // fila de indicador (tasa/porcentaje): MTD/YTD llegan ya calculados como número, no como texto
   function fInd(lbl,valDiaStr,mtdNum,ytdNum,fmt,pptoNombre,cls){
-    const pp=pptoDe(pptoNombre||lbl);
+    let pp=pptoDe(pptoNombre||lbl);
+    // Sheets guarda las celdas con formato "%" como fracción (0.506 = 50.6%); si detectamos fracción, escalamos a puntos porcentuales.
+    if(fmt===fmtPct && pp!=null && Math.abs(pp)<=1) pp=pp*100;
     return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(valDiaStr)}${cell(fmt(mtdNum))}${varCellsFmt(mtdNum,pp,fmt)}${cell(fmt(ytdNum))}</tr>`;
   }
   function head(t){ return `<tr class="head"><td>${t}</td><td class="val">Hoy</td><td class="val">MTD</td><td class="val">Ppto</td><td class="val">Var</td><td class="val">YTD</td></tr>`; }
