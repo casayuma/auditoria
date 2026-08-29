@@ -86,6 +86,11 @@ select:focus{border-color:var(--blue)}
 @keyframes spin{to{transform:rotate(360deg)}}
 .errbox{background:#f2d6dc;border:1px solid var(--bad);color:var(--bad);padding:14px 16px;border-radius:2px;font-size:13px;margin:20px 0}
 .okmsg{background:#e0efe0;border:1px solid var(--ok);color:var(--ok);padding:10px 14px;border-radius:2px;font-size:13px;margin:12px 0}
+
+.cap-h{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);font-weight:600;margin:18px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.cap-sub{font-size:12px;color:var(--cactus);margin:-6px 0 8px}
+.cuadre-cat{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--cactus);margin:12px 0 4px}
+.line{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;gap:12px;border-bottom:1px solid rgba(0,0,0,.05)}
 .note{font-size:11.5px;color:var(--cactus);margin-top:18px;font-style:italic}
 @media(max-width:560px){.dr-table td{padding:8px 6px;font-size:12.5px}main{padding:20px 12px 70px}.cap-grid{grid-template-columns:1fr}}
 </style>
@@ -332,35 +337,42 @@ function renderCaptura(){
     <div class="cap-form">
       <div class="fld cap-full"><label>Fecha del cuadre</label><input id="cFecha" type="date" value="${hoy}" onchange="cargarCuadreExistente()"></div>
 
-      <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);font-weight:600;margin:18px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px">Terminal FRONT (afil. 004837575)</div>
+      <div class="cap-h">Terminal FRONT (afil. 004837575)</div>
       <div class="cap-grid">
         <div class="fld"><label>Crédito otros</label><input id="fCredOtros" type="number" step="0.01" placeholder="0.00" oninput="sumFront()"></div>
         <div class="fld"><label>Crédito AMEX</label><input id="fAmex" type="number" step="0.01" placeholder="0.00" oninput="sumFront()"></div>
         <div class="fld"><label>Débito otros</label><input id="fDebOtros" type="number" step="0.01" placeholder="0.00" oninput="sumFront()"></div>
         <div class="fld"><label>Arqueo efectivo Front</label><input id="cArqFront" type="number" step="0.01" placeholder="0.00"></div>
       </div>
-      <div style="font-size:12px;color:var(--cactus);margin:-6px 0 4px">Total terminal Front: <strong id="totFrontLbl">$0.00</strong></div>
+      <div class="cap-sub">Total terminal Front: <strong id="totFrontLbl">$0.00</strong></div>
 
-      <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);font-weight:600;margin:18px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px">Terminal RESTAURANTE (afil. 004859665)</div>
+      <div class="cap-h">Otros canales FRONT</div>
+      <div class="cap-grid">
+        <div class="fld"><label>Openpay (link)</label><input id="cOpenpay" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="fld"><label>Transferencias</label><input id="cTransfer" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="fld cap-full"><label>Estado de transferencias</label>
+          <select id="cTransferEstado"><option value="Pendiente">Pendiente por validar</option><option value="Validado">Validado</option></select></div>
+      </div>
+
+      <div class="cap-h">Terminal RESTAURANTE (afil. 004859665)</div>
       <div class="cap-grid">
         <div class="fld"><label>Crédito otros</label><input id="rCredOtros" type="number" step="0.01" placeholder="0.00" oninput="sumRest()"></div>
         <div class="fld"><label>Crédito AMEX</label><input id="rAmex" type="number" step="0.01" placeholder="0.00" oninput="sumRest()"></div>
         <div class="fld"><label>Débito otros</label><input id="rDebOtros" type="number" step="0.01" placeholder="0.00" oninput="sumRest()"></div>
         <div class="fld"><label>Arqueo efectivo Restaurante</label><input id="cArqRest" type="number" step="0.01" placeholder="0.00"></div>
       </div>
-      <div style="font-size:12px;color:var(--cactus);margin:-6px 0 12px">Total terminal Rest: <strong id="totRestLbl">$0.00</strong></div>
+      <div class="cap-sub">Total terminal Rest: <strong id="totRestLbl">$0.00</strong></div>
 
       <button class="cap-btn" onclick="guardarCuadre()">Guardar y ver cuadre</button>
       <div id="cuadreMsg"></div>
       <div id="cuadreRes"></div>
     </div>
-    <div class="note">Captura el desglose de cada terminal. El total se compara automáticamente: Front contra Cloudbeds, Restaurante contra Poster. Puedes corregir y volver a guardar.</div>`;
+    <div class="note">Terminal se cuadra por resta (todo lo que no es Openpay, transferencia, VCC o efectivo). Las VCC de agencias se muestran informativas. Front vs Cloudbeds · Restaurante vs Poster.</div>`;
   cargarCuadreExistente();
 }
 function sumFront(){ const t=(+document.getElementById('fCredOtros').value||0)+(+document.getElementById('fAmex').value||0)+(+document.getElementById('fDebOtros').value||0); document.getElementById('totFrontLbl').textContent='$'+money(t); }
 function sumRest(){ const t=(+document.getElementById('rCredOtros').value||0)+(+document.getElementById('rAmex').value||0)+(+document.getElementById('rDebOtros').value||0); document.getElementById('totRestLbl').textContent='$'+money(t); }
 
-// si ya hay cuadre de esa fecha, precargar los valores para corregir
 async function cargarCuadreExistente(){
   const fecha=document.getElementById('cFecha').value;
   try{
@@ -370,11 +382,13 @@ async function cargarCuadreExistente(){
     const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=(v!==''&&v!=null&&!isNaN(v))?v:'';};
     if(row){
       set('fCredOtros',row[1]);set('fAmex',row[2]);set('fDebOtros',row[3]);
-      set('rCredOtros',row[5]);set('rAmex',row[6]);set('rDebOtros',row[7]);
-      set('cArqFront',row[9]);set('cArqRest',row[10]);
-      document.getElementById('cuadreMsg').innerHTML=`<div class="note">Ya hay un cuadre para ${fecha} (por ${row[11]||'—'}). Puedes corregirlo.</div>`;
+      set('cOpenpay',row[5]);set('cTransfer',row[6]);
+      const te=document.getElementById('cTransferEstado'); if(te&&row[7])te.value=row[7];
+      set('rCredOtros',row[8]);set('rAmex',row[9]);set('rDebOtros',row[10]);
+      set('cArqFront',row[12]);set('cArqRest',row[13]);
+      document.getElementById('cuadreMsg').innerHTML=`<div class="note">Ya hay un cuadre para ${fecha} (por ${row[14]||'—'}). Puedes corregirlo.</div>`;
     }else{
-      ['fCredOtros','fAmex','fDebOtros','rCredOtros','rAmex','rDebOtros','cArqFront','cArqRest'].forEach(id=>set(id,''));
+      ['fCredOtros','fAmex','fDebOtros','cOpenpay','cTransfer','rCredOtros','rAmex','rDebOtros','cArqFront','cArqRest'].forEach(id=>set(id,''));
       document.getElementById('cuadreMsg').innerHTML='';
     }
     sumFront();sumRest();
@@ -386,6 +400,7 @@ async function guardarCuadre(){
   const b={accion:'guardarCuadre',id:SESSION.id,pin:SESSION.pin,
     fecha:document.getElementById('cFecha').value,
     fCredOtros:document.getElementById('fCredOtros').value||0,fAmex:document.getElementById('fAmex').value||0,fDebOtros:document.getElementById('fDebOtros').value||0,
+    openpay:document.getElementById('cOpenpay').value||0,transfer:document.getElementById('cTransfer').value||0,transferEstado:document.getElementById('cTransferEstado').value,
     rCredOtros:document.getElementById('rCredOtros').value||0,rAmex:document.getElementById('rAmex').value||0,rDebOtros:document.getElementById('rDebOtros').value||0,
     arqFront:document.getElementById('cArqFront').value||0,arqRest:document.getElementById('cArqRest').value||0};
   const msg=document.getElementById('cuadreMsg'); msg.innerHTML='Guardando y comparando…';
@@ -393,22 +408,30 @@ async function guardarCuadre(){
     const j=await apiPost(b);
     if(!j.ok){ msg.innerHTML=`<div class="errbox">${j.error}</div>`; return; }
     msg.innerHTML=`<div class="okmsg">Cuadre guardado para ${b.fecha}.</div>`;
-    if(j.cuadre) pintarCuadre(j.cuadre);
+    if(j.cuadre) pintarCuadre(j.cuadre, document.getElementById('cTransferEstado').value);
   }catch(e){ msg.innerHTML=`<div class="errbox">No se pudo guardar.</div>`; }
 }
-function pintarCuadre(c){
+function pintarCuadre(c, transferEstado){
   const linea=(lbl,o)=>{
     const col=o.ok?'var(--ok)':'var(--bad)'; const ico=o.ok?'🟢':'🔴';
     return `<div class="line"><span>${ico} ${lbl}</span><span style="font-variant-numeric:tabular-nums">cap $${money(o.capturado)} · sist $${money(o.sistema)} · <strong style="color:${col}">${o.dif>=0?'+':''}${money(o.dif)}</strong></span></div>`;
   };
-  const allOk=c.front.terminal.ok&&c.front.efectivo.ok&&c.rest.terminal.ok&&c.rest.efectivo.ok;
+  const lineaInfo=(lbl,val,extra)=>`<div class="line"><span>🔵 ${lbl}</span><span style="font-variant-numeric:tabular-nums">$${money(val)}${extra||''}</span></div>`;
+  const f=c.front;
+  const transferLine=(transferEstado==='Validado')
+    ? linea('Transferencias',f.transfer)
+    : `<div class="line"><span>⏳ Transferencias (por validar)</span><span style="font-variant-numeric:tabular-nums">cap $${money(f.transfer.capturado)} · sist $${money(f.transfer.sistema)}</span></div>`;
+  const allOk=f.terminal.ok&&f.openpay.ok&&f.efectivo.ok&&c.rest.terminal.ok&&c.rest.efectivo.ok&&(transferEstado==='Validado'?f.transfer.ok:true);
   document.getElementById('cuadreRes').innerHTML=`
     <div style="margin-top:18px;padding:16px;border-radius:2px;border:1px solid ${allOk?'var(--ok)':'var(--bad)'};background:${allOk?'#e0efe0':'#faf0ef'}">
       <div style="font-weight:600;margin-bottom:10px;font-family:var(--disp)">${allOk?'✅ Todo cuadra':'⚠️ Revisar diferencias'}</div>
-      <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--cactus);margin:8px 0 4px">Front (vs Cloudbeds)</div>
-      ${linea('Terminal',c.front.terminal)}
-      ${linea('Efectivo',c.front.efectivo)}
-      <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--cactus);margin:12px 0 4px">Restaurante (vs Poster)</div>
+      <div class="cuadre-cat">Front · Cloudbeds</div>
+      ${linea('Terminal BBVA',f.terminal)}
+      ${linea('Openpay',f.openpay)}
+      ${transferLine}
+      ${lineaInfo('VCC agencias (informativo)',f.vcc.sistema)}
+      ${linea('Efectivo',f.efectivo)}
+      <div class="cuadre-cat">Restaurante · Poster</div>
       ${linea('Terminal',c.rest.terminal)}
       ${linea('Efectivo',c.rest.efectivo)}
     </div>`;
