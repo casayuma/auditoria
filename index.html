@@ -223,7 +223,7 @@ function renderDaily(){
   const mesCol = fSel ? (fSel.m+1) : 0; // Ene=col1 ... Dic=col12
   function pptoDe(nombre){
     if(!DATA.presupuesto||!mesCol) return null;
-    const norm=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,'');
+    const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
     const target=norm(nombre);
     for(let k=1;k<DATA.presupuesto.length;k++){
       if(norm(DATA.presupuesto[k][0])===target) return num(DATA.presupuesto[k][mesCol]);
