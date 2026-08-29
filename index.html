@@ -199,37 +199,100 @@ function parseFecha(s){s=String(s).trim();if(!s)return null;let m=s.match(/^(\d{
 function initDaily(){CAP_ROWS=DATA.captura.filter(r=>parseFecha(r[0]));const sel=document.getElementById('daySel');sel.innerHTML='';CAP_ROWS.slice().reverse().forEach((r,idx)=>{const realIdx=CAP_ROWS.length-1-idx;const o=document.createElement('option');o.value=realIdx;o.textContent=r[0];sel.appendChild(o);});renderDaily();}
 function renderDaily(){
   if(!CAP_ROWS.length){document.getElementById('dailyBody').innerHTML='<div class="empty">Sin datos.</div>';return;}
-  const i=+document.getElementById('daySel').value||0;const r=CAP_ROWS[i];const g=k=>r[k]!==undefined?r[k]:'';
-  const fSel=parseFecha(r[0]);let mtd={ocup:0,ing:0,alim:0,beb:0,pax:0,div:0};
-  if(fSel)CAP_ROWS.forEach(rr=>{const f=parseFecha(rr[0]);if(f&&f.m===fSel.m&&f.y===fSel.y&&f.d<=fSel.d){mtd.ocup+=num(rr[1]);mtd.ing+=num(rr[7]);mtd.alim+=num(rr[18]);mtd.beb+=num(rr[19]);mtd.pax+=num(rr[21]);mtd.div+=num(rr[17]);}});
-  const kpis=`<div class="kpis"><div class="kpi"><div class="k-lbl">Ingreso habitaciones</div><div class="k-val">$${money(num(g(7)))}</div><div class="k-sub">MTD $${money(mtd.ing)}</div></div><div class="kpi"><div class="k-lbl">Ocupación</div><div class="k-val">${g(8)||'–'}</div><div class="k-sub">${int(num(g(1)))} vendidas</div></div><div class="kpi"><div class="k-lbl">ADR</div><div class="k-val">$${money(num(g(9)))}</div></div><div class="kpi"><div class="k-lbl">RevPAR</div><div class="k-val">$${money(num(g(10)))}</div></div></div>`;
-  const dr=`<div class="section-eyebrow">Daily Report · ${g(0)}</div><table class="dr-table">
-    <tr class="head"><td>Concepto</td><td class="val">Hoy</td><td class="val">MTD</td></tr>
-    <tr><td class="lbl">Hab. ocupadas (vendidas)</td><td class="val">${int(num(g(1)))}</td><td class="val">${int(mtd.ocup)}</td></tr>
-    <tr><td class="lbl">Hab. cortesía</td><td class="val">${int(num(g(2)))}</td><td class="val">–</td></tr>
-    <tr><td class="lbl">Hab. uso casa</td><td class="val">${int(num(g(3)))}</td><td class="val">–</td></tr>
-    <tr><td class="lbl">Hab. intercambio</td><td class="val">${int(num(g(4)))}</td><td class="val">–</td></tr>
-    <tr class="total"><td class="lbl">Total cuartos ocupados</td><td class="val">${int(num(g(6)))}</td><td class="val">–</td></tr>
-    <tr><td class="lbl">% Ocupación</td><td class="val">${g(8)||'–'}</td><td class="val">–</td></tr>
-    <tr><td class="lbl">ADR</td><td class="val">$${money(num(g(9)))}</td><td class="val">–</td></tr>
-    <tr><td class="lbl">RevPAR</td><td class="val">$${money(num(g(10)))}</td><td class="val">–</td></tr>
-    <tr class="total"><td class="lbl">Total cuartos (ingreso)</td><td class="val">$${money(num(g(7)))}</td><td class="val">$${money(mtd.ing)}</td></tr>
-    <tr class="head"><td>División cuartos</td><td class="val"></td><td class="val"></td></tr>
-    <tr class="sub"><td class="lbl">Spa</td><td class="val">$${money(num(g(11)))}</td><td class="val">–</td></tr>
-    <tr class="sub"><td class="lbl">Lavandería</td><td class="val">$${money(num(g(12)))}</td><td class="val">–</td></tr>
-    <tr class="sub"><td class="lbl">Transportación</td><td class="val">$${money(num(g(13)))}</td><td class="val">–</td></tr>
-    <tr class="sub"><td class="lbl">Day Pass</td><td class="val">$${money(num(g(14)))}</td><td class="val">–</td></tr>
-    <tr class="sub"><td class="lbl">Clases de surf</td><td class="val">$${money(num(g(15)))}</td><td class="val">–</td></tr>
-    <tr class="sub"><td class="lbl">Misceláneos</td><td class="val">$${money(num(g(16)))}</td><td class="val">–</td></tr>
-    <tr class="total"><td class="lbl">Total división cuartos</td><td class="val">$${money(num(g(17)))}</td><td class="val">$${money(mtd.div)}</td></tr>
-    <tr class="head"><td>Restaurante</td><td class="val"></td><td class="val"></td></tr>
-    <tr class="sub"><td class="lbl">Alimentos</td><td class="val">$${money(num(g(18)))}</td><td class="val">$${money(mtd.alim)}</td></tr>
-    <tr class="sub"><td class="lbl">Bebidas</td><td class="val">$${money(num(g(19)))}</td><td class="val">$${money(mtd.beb)}</td></tr>
-    <tr class="total"><td class="lbl">Total restaurante</td><td class="val">$${money(num(g(20)))}</td><td class="val">$${money(mtd.alim+mtd.beb)}</td></tr>
-    <tr><td class="lbl">No. Pax</td><td class="val">${int(num(g(21)))}</td><td class="val">${int(mtd.pax)}</td></tr>
-  </table><div class="note">Vista de solo lectura. Refresca la página para la última versión.</div>`;
-  document.getElementById('dailyBody').innerHTML=kpis+dr;
+  const i=+document.getElementById('daySel').value||0; const r=CAP_ROWS[i]; const g=k=>r[k]!==undefined?r[k]:'';
+  const fSel=parseFecha(r[0]);
+  // acumuladores MTD (mes de la fecha, hasta el día) y YTD (todo el año hasta el día)
+  const cols=[1,2,3,4,6,7,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,39];
+  let mtd={},ytd={}; cols.forEach(c=>{mtd[c]=0;ytd[c]=0;});
+  if(fSel)CAP_ROWS.forEach(rr=>{const f=parseFecha(rr[0]);if(!f)return;
+    const enYTD=(f.y===fSel.y)&&(f.m<fSel.m||(f.m===fSel.m&&f.d<=fSel.d));
+    const enMTD=(f.y===fSel.y&&f.m===fSel.m&&f.d<=fSel.d);
+    cols.forEach(c=>{const v=num(rr[c]); if(enYTD)ytd[c]+=v; if(enMTD)mtd[c]+=v;});
+  });
+  // indicadores recalculados (no se suman)
+  const ocupMTD = mtd[6]>0 ? (mtd[7]/mtd[6]) : 0;   // ADR MTD = ingreso/ctos
+  const ocupYTD = ytd[6]>0 ? (ytd[7]/ytd[6]) : 0;
+  const chqMTD  = mtd[36]>0 ? (mtd[35]/mtd[36]) : 0; // cheque prom A&B
+  const chqYTD  = ytd[36]>0 ? (ytd[35]/ytd[36]) : 0;
+
+  // fila: label, colDia (índice o valor), tipo. tipo: 'm'=money, 'i'=int, 'raw'=texto tal cual (ADR/%), 'calc'
+  const M=(c)=>'$'+money(num(g(c)));
+  const I=(c)=>int(num(g(c)));
+  const cell=(v)=>`<td class="val">${v}</td>`;
+  const emptyBudget=`<td class="val" style="color:#c9c0a8">–</td><td class="val" style="color:#c9c0a8">–</td>`;
+
+  // helpers para armar filas con las 5 columnas
+  function fMoney(lbl,c,cls){ return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(M(c))}${cell('$'+money(mtd[c]))}${emptyBudget}${cell('$'+money(ytd[c]))}</tr>`; }
+  function fInt(lbl,c,cls){ return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(I(c))}${cell(int(mtd[c]))}${emptyBudget}${cell(int(ytd[c]))}</tr>`; }
+  function fRaw(lbl,valDia,valMtd,valYtd,cls){ return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(valDia)}${cell(valMtd)}${emptyBudget}${cell(valYtd)}</tr>`; }
+  function head(t){ return `<tr class="head"><td>${t}</td><td class="val">Hoy</td><td class="val">MTD</td><td class="val">Ppto</td><td class="val">Var</td><td class="val">YTD</td></tr>`; }
+
+  const kpis=`<div class="kpis">
+    <div class="kpi"><div class="k-lbl">Total Hotel</div><div class="k-val">$${money(num(g(39)))}</div><div class="k-sub">MTD $${money(mtd[39])}</div></div>
+    <div class="kpi"><div class="k-lbl">Ingreso habitaciones</div><div class="k-val">$${money(num(g(7)))}</div><div class="k-sub">YTD $${money(ytd[7])}</div></div>
+    <div class="kpi"><div class="k-lbl">Ocupación</div><div class="k-val">${g(8)||'–'}</div><div class="k-sub">${int(num(g(1)))} vendidas</div></div>
+    <div class="kpi"><div class="k-lbl">ADR</div><div class="k-val">$${money(num(g(9)))}</div><div class="k-sub">MTD $${money(ocupMTD)}</div></div>
+  </div>`;
+
+  const t=`
+  <div class="section-eyebrow">Daily Report · ${g(0)}</div>
+  <table class="dr-table">
+    ${head('Habitaciones')}
+    ${fInt('Hab. ocupadas (vendidas)',1)}
+    ${fInt('Hab. cortesía',2)}
+    ${fInt('Hab. uso casa',3)}
+    ${fInt('Hab. intercambio',4)}
+    ${fInt('Total cuartos ocupados',6,'total')}
+    ${fRaw('% Ocupación', g(8)||'–','–','–')}
+    ${fRaw('ADR', '$'+money(num(g(9))), '$'+money(ocupMTD), '$'+money(ocupYTD))}
+    ${fRaw('RevPAR', '$'+money(num(g(10))), '–','–')}
+    ${fMoney('Total cuartos (ingreso)',7,'total')}
+
+    ${head('División cuartos')}
+    ${fMoney('Spa',11,'sub')}
+    ${fMoney('Lavandería',12,'sub')}
+    ${fMoney('Transportación (La Ola)',13,'sub')}
+    ${fMoney('Day Pass',14,'sub')}
+    ${fMoney('Clases de surf',15,'sub')}
+    ${fMoney('Misceláneos',16,'sub')}
+    ${fMoney('Total división cuartos',17,'total')}
+
+    ${head('Restaurante')}
+    ${fMoney('Alimentos',18,'sub')}
+    ${fMoney('Bebidas',19,'sub')}
+    ${fMoney('Total restaurante',20,'total')}
+    ${fInt('No. Pax',21)}
+
+    ${head('Eventos')}
+    ${fMoney('Alimentos',22,'sub')}
+    ${fMoney('Bebidas',23,'sub')}
+    ${fMoney('Renta',24,'sub')}
+    ${fMoney('Extras',25,'sub')}
+    ${fMoney('Total eventos',26,'total')}
+    ${fInt('No. Pax',27)}
+
+    ${head('Minibar')}
+    ${fMoney('Alimentos',28,'sub')}
+    ${fMoney('Bebidas',29,'sub')}
+    ${fMoney('Tabaquería / Otros',30,'sub')}
+    ${fMoney('Total minibar',31,'total')}
+    ${fInt('No. Pax',32)}
+
+    ${head('Otros')}
+    ${fMoney('Cigarros',33,'sub')}
+    ${fMoney('Shop / Boutique',34,'sub')}
+
+    ${head('Totales')}
+    ${fMoney('Total A&B',35,'total')}
+    ${fInt('A&B No. Pax',36)}
+    ${fRaw('Cheque promedio A&B', '$'+money(num(g(37))), '$'+money(chqMTD), '$'+money(chqYTD))}
+    ${fRaw('RevPAR (A&B + Hab)', '$'+money(num(g(38))), '–','–')}
+    ${fMoney('TOTAL HOTEL',39,'total')}
+  </table>
+  <div class="note">MTD = mes en curso hasta la fecha · YTD = año hasta la fecha. Presupuesto y Variación se agregan al conectar la pestaña PRESUPUESTO. Los indicadores (%, ADR, RevPAR, cheque) se recalculan, no se suman.</div>`;
+  document.getElementById('dailyBody').innerHTML=kpis+t;
 }
+
 function renderCaptura(){
   const hoy=new Date().toISOString().slice(0,10);
   document.getElementById('capturaBody').innerHTML=`<div class="section-eyebrow">Cuadre diario · captura</div>
