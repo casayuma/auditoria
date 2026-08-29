@@ -126,6 +126,7 @@ select:focus{border-color:var(--blue)}
   <main>
     <section class="view" id="v-daily"><div class="ctl"><label for="daySel">Fecha</label><select id="daySel" onchange="renderDaily()" style="max-width:150px"></select><button class="cap-btn" style="padding:9px 16px" onclick="descargarPDF()">PDF</button></div><div id="dailyBody"></div></section>
     <section class="view" id="v-captura"><div id="capturaBody"></div></section>
+    <section class="view" id="v-historial"><div id="historialBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
     <section class="view" id="v-ajustes"><div id="ajustesBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
     <section class="view" id="v-control"><div id="controlBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
   </main>
@@ -183,12 +184,13 @@ function logout(){location.reload();}
 const TABDEFS=[
   {id:'daily',label:'Daily Report',levels:['read','capture','full']},
   {id:'captura',label:'Cuadre diario',levels:['capture','full']},
+  {id:'historial',label:'Historial cuadres',levels:['full']},
   {id:'ajustes',label:'Ajustes & Anulaciones',levels:['full']},
   {id:'control',label:'Control mensual',levels:['full']},
 ];
 function buildTabs(){const tabs=document.getElementById('tabs');tabs.innerHTML='';const allowed=TABDEFS.filter(t=>t.levels.includes(SESSION.nivel));allowed.forEach((t,i)=>{const b=document.createElement('button');b.textContent=t.label;b.dataset.view=t.id;if(i===0)b.classList.add('active');b.onclick=()=>switchView(t.id,b);tabs.appendChild(b);});switchView(allowed[0].id,tabs.querySelector('button'));}
 function switchView(id,btn){document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('v-'+id).classList.add('active');}
-let DATA={captura:null,ajustes:null,control:null,presupuesto:null};
+let DATA={captura:null,ajustes:null,control:null,presupuesto:null,cuadres:null};
 async function loadAll(){
   try{const j=await apiGet({accion:'captura',id:SESSION.id,pin:SESSION.pin});if(j.ok){DATA.captura=j.filas;} else throw new Error(j.error);
     try{const jp=await apiGet({accion:'presupuesto',id:SESSION.id,pin:SESSION.pin});if(jp.ok)DATA.presupuesto=jp.filas;}catch(_){}
@@ -200,6 +202,8 @@ async function loadAll(){
     catch(e){document.getElementById('ajustesBody').innerHTML=`<div class="errbox">${e.message}</div>`;}
     try{const j=await apiGet({accion:'control',id:SESSION.id,pin:SESSION.pin});if(j.ok){DATA.control=j.filas;renderControl();}}
     catch(e){document.getElementById('controlBody').innerHTML=`<div class="errbox">${e.message}</div>`;}
+    try{const j=await apiGet({accion:'cuadres',id:SESSION.id,pin:SESSION.pin});if(j.ok){DATA.cuadres=j.filas;renderHistorial();}}
+    catch(e){document.getElementById('historialBody').innerHTML=`<div class="errbox">${e.message}</div>`;}
   }
 }
 let CAP_ROWS=[];
@@ -462,6 +466,56 @@ async function justificar(idTx){
     const jj=await apiGet({accion:'ajustes',id:SESSION.id,pin:SESSION.pin});if(jj.ok)DATA.ajustes=jj.filas;
     el.parentElement.innerHTML=`<div style="font-size:11px;color:var(--ok)">✓ ${texto}<br><span style="color:var(--cactus)">${SESSION.nombre}</span></div>`;
   }catch(e){alert('No se pudo guardar.');el.disabled=false;}
+}
+function renderHistorial(){
+  const rows=(DATA.cuadres||[]).slice(1).filter(r=>r[0]);
+  if(!rows.length){document.getElementById('historialBody').innerHTML='<div class="empty">Aún no hay cuadres capturados.</div>';return;}
+  rows.sort((a,b)=>String(b[0]).localeCompare(String(a[0])));
+  window._HIST=rows;
+  const body=rows.map((r,idx)=>{
+    const fecha=String(r[0]).slice(0,10), por=r[14]||'—', general=r[23]||'';
+    const sem = general==='CUADRA' ? '<span class="badge sem-ok">🟢</span>' : general==='REVISAR' ? '<span class="badge sem-bad">🔴</span>' : '<span style="color:#c9c0a8">—</span>';
+    const estT=r[7]||'';
+    return `<tr class="clickrow" onclick="detalleCuadre(${idx})"><td>${fecha}</td><td>${por}</td><td>${estT}</td><td style="text-align:center">${sem}</td></tr>`;
+  }).join('');
+  document.getElementById('historialBody').innerHTML=`
+    <div class="section-eyebrow">Historial de cuadres</div>
+    <table class="aud"><thead><tr><th>Fecha</th><th>Capturado por</th><th>Transfer</th><th style="text-align:center">Cuadre</th></tr></thead>
+    <tbody>${body}</tbody></table>
+    <div class="note">Clic en un día para ver el desglose completo por canal.</div>
+    <div id="cuadreDetBody"></div>`;
+}
+function detalleCuadre(idx){
+  const r=window._HIST[idx]; if(!r)return;
+  const m=v=>'$'+money(num(v));
+  const fecha=String(r[0]).slice(0,10);
+  const estadoLinea=(lbl,cap,estado)=>{
+    const ico = estado==='OK'?'🟢': estado==='REVISAR'?'🔴':'🔵';
+    return `<div class="line"><span>${ico} ${lbl}</span><span>${cap}${estado?(' · '+estado):''}</span></div>`;
+  };
+  const totFront=num(r[4]), openpay=num(r[5]), transfer=num(r[6]), estT=r[7]||'', totRest=num(r[11]), arqF=num(r[12]), arqR=num(r[13]);
+  const resTF=r[17]||'', resOP=r[18]||'', resEF=r[19]||'', resVCC=r[20]||'', resTR=r[21]||'', resER=r[22]||'', general=r[23]||'';
+  const allOk = general==='CUADRA';
+  document.getElementById('cuadreDetBody').innerHTML=`
+    <div style="margin-top:18px;padding:16px;border-radius:2px;border:1px solid ${allOk?'var(--ok)':'var(--bad)'};background:${allOk?'#e0efe0':'#faf0ef'}">
+      <div style="font-weight:600;margin-bottom:4px;font-family:var(--disp)">${fecha} · ${allOk?'✅ Cuadra':'⚠️ Revisar'}</div>
+      <div style="font-size:11px;color:var(--cactus);margin-bottom:10px">Capturado por ${r[14]||'—'} · ${r[15]||''}</div>
+      <div class="cuadre-cat">Desglose terminal Front</div>
+      <div class="line"><span>Crédito otros</span><span>${m(r[1])}</span></div>
+      <div class="line"><span>Crédito AMEX</span><span>${m(r[2])}</span></div>
+      <div class="line"><span>Débito otros</span><span>${m(r[3])}</span></div>
+      <div class="line"><span><strong>Total terminal Front</strong></span><span><strong>${m(r[4])}</strong></span></div>
+      <div class="cuadre-cat">Conciliación Front (vs Cloudbeds)</div>
+      ${estadoLinea('Terminal BBVA', m(totFront), resTF)}
+      ${estadoLinea('Openpay', m(openpay), resOP)}
+      ${estadoLinea('Transferencias ('+(estT||'—')+')', m(transfer), '')}
+      ${estadoLinea('VCC agencias', resVCC, '')}
+      ${estadoLinea('Efectivo Front', m(arqF), resEF)}
+      <div class="cuadre-cat">Conciliación Restaurante (vs Poster)</div>
+      ${estadoLinea('Terminal Rest', m(totRest), resTR)}
+      ${estadoLinea('Efectivo Rest', m(arqR), resER)}
+    </div>`;
+  document.getElementById('cuadreDetBody').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function renderControl(){
   const rows=DATA.control.slice(1).filter(r=>r[0]);const M={};
