@@ -89,6 +89,7 @@ select:focus{border-color:var(--blue)}
 .note{font-size:11.5px;color:var(--cactus);margin-top:18px;font-style:italic}
 @media(max-width:560px){.dr-table td{padding:8px 6px;font-size:12.5px}main{padding:20px 12px 70px}.cap-grid{grid-template-columns:1fr}}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 <div id="gate">
@@ -118,7 +119,7 @@ select:focus{border-color:var(--blue)}
   </header>
   <nav class="tabs" id="tabs"></nav>
   <main>
-    <section class="view" id="v-daily"><div class="ctl"><label for="daySel">Fecha</label><select id="daySel" onchange="renderDaily()"></select></div><div id="dailyBody"></div></section>
+    <section class="view" id="v-daily"><div class="ctl"><label for="daySel">Fecha</label><select id="daySel" onchange="renderDaily()"></select><button class="cap-btn" style="padding:9px 16px" onclick="descargarPDF()">Descargar PDF</button></div><div id="dailyBody"></div></section>
     <section class="view" id="v-captura"><div id="capturaBody"></div></section>
     <section class="view" id="v-ajustes"><div id="ajustesBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
     <section class="view" id="v-control"><div id="controlBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
@@ -138,6 +139,7 @@ const CONFIG={
 const money=n=>(isNaN(n)||n===''||n==null)?'–':Number(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
 const int=n=>(isNaN(n)||n==='')?'–':Number(n).toLocaleString('es-MX');
 const num=v=>{const x=parseFloat(String(v).replace(/[^0-9.\-]/g,''));return isNaN(x)?0:x;};
+const pct=v=>{ if(v==='' ||v==null) return '–'; let s=String(v).trim(); if(s.includes('%')) return s; let x=parseFloat(s.replace(/[^0-9.\-]/g,'')); if(isNaN(x)) return '–'; if(x<=1) x=x*100; return x.toLocaleString('es-MX',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'; };
 let SESSION=null,PENDING=null;
 (function(){const sel=document.getElementById('userSel');CONFIG.USERS.forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=u.n;sel.appendChild(o);});sel.onchange=()=>{document.getElementById('userId').value=sel.value;};document.getElementById('userId').value=sel.value;})();
 async function apiGet(params){const qs=Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&');const res=await fetch(CONFIG.WEBAPP_URL+'?'+qs);return res.json();}
@@ -228,10 +230,10 @@ function renderDaily(){
   function head(t){ return `<tr class="head"><td>${t}</td><td class="val">Hoy</td><td class="val">MTD</td><td class="val">Ppto</td><td class="val">Var</td><td class="val">YTD</td></tr>`; }
 
   const kpis=`<div class="kpis">
-    <div class="kpi"><div class="k-lbl">Total Hotel</div><div class="k-val">$${money(num(g(39)))}</div><div class="k-sub">MTD $${money(mtd[39])}</div></div>
-    <div class="kpi"><div class="k-lbl">Ingreso habitaciones</div><div class="k-val">$${money(num(g(7)))}</div><div class="k-sub">YTD $${money(ytd[7])}</div></div>
-    <div class="kpi"><div class="k-lbl">Ocupación</div><div class="k-val">${g(8)||'–'}</div><div class="k-sub">${int(num(g(1)))} vendidas</div></div>
     <div class="kpi"><div class="k-lbl">ADR</div><div class="k-val">$${money(num(g(9)))}</div><div class="k-sub">MTD $${money(ocupMTD)}</div></div>
+    <div class="kpi"><div class="k-lbl">Ocupación</div><div class="k-val">${pct(g(8))}</div><div class="k-sub">${int(num(g(1)))} vendidas</div></div>
+    <div class="kpi"><div class="k-lbl">Ingreso habitaciones</div><div class="k-val">$${money(num(g(7)))}</div><div class="k-sub">YTD $${money(ytd[7])}</div></div>
+    <div class="kpi"><div class="k-lbl">Total Hotel</div><div class="k-val">$${money(num(g(39)))}</div><div class="k-sub">MTD $${money(mtd[39])}</div></div>
   </div>`;
 
   const t=`
@@ -243,7 +245,7 @@ function renderDaily(){
     ${fInt('Hab. uso casa',3)}
     ${fInt('Hab. intercambio',4)}
     ${fInt('Total cuartos ocupados',6,'total')}
-    ${fRaw('% Ocupación', g(8)||'–','–','–')}
+    ${fRaw('% Ocupación', pct(g(8)),'–','–')}
     ${fRaw('ADR', '$'+money(num(g(9))), '$'+money(ocupMTD), '$'+money(ocupYTD))}
     ${fRaw('RevPAR', '$'+money(num(g(10))), '–','–')}
     ${fMoney('Total cuartos (ingreso)',7,'total')}
@@ -291,6 +293,16 @@ function renderDaily(){
   </table>
   <div class="note">MTD = mes en curso hasta la fecha · YTD = año hasta la fecha. Presupuesto y Variación se agregan al conectar la pestaña PRESUPUESTO. Los indicadores (%, ADR, RevPAR, cheque) se recalculan, no se suman.</div>`;
   document.getElementById('dailyBody').innerHTML=kpis+t;
+}
+
+function descargarPDF(){
+  const sel=document.getElementById('daySel');
+  const fecha=sel.options[sel.selectedIndex]?sel.options[sel.selectedIndex].text:'';
+  const el=document.getElementById('dailyBody');
+  const opt={margin:[10,10,10,10],filename:'DailyReport_CasaYuma_'+fecha.replace(/[^0-9A-Za-z]/g,'')+'.pdf',
+    image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,backgroundColor:'#F5F1E6'},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}};
+  html2pdf().set(opt).from(el).save();
 }
 
 function renderCaptura(){
