@@ -51,7 +51,7 @@ select{font-family:var(--mono);font-size:14px;padding:9px 12px;border:1px solid 
 select:focus{border-color:var(--blue)}
 .section-eyebrow{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--cactus);margin:26px 0 10px}
 .dr-table{width:100%;border-collapse:collapse;font-size:13.5px}
-.dr-table td{padding:9px 10px;border-bottom:1px solid var(--line)}
+.dr-table{min-width:640px}.dr-table td{padding:7px 8px;border-bottom:1px solid var(--line);font-size:12.5px;white-space:nowrap}
 .dr-table td.lbl{color:var(--ink)}
 .dr-table td.val{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
 .dr-table tr.head td{background:var(--blue);color:var(--paper);font-size:11px;letter-spacing:.14em;text-transform:uppercase;border:none}
@@ -258,7 +258,7 @@ function renderDaily(){
 
   const t=`
   <div class="section-eyebrow">Daily Report · ${g(0)}</div>
-  <table class="dr-table">
+  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table class="dr-table">
     ${head('Habitaciones')}
     ${fInt('Hab. ocupadas (vendidas)',1)}
     ${fInt('Hab. cortesía',2)}
@@ -310,7 +310,7 @@ function renderDaily(){
     ${fRaw('Cheque promedio A&B', '$'+money(num(g(37))), '$'+money(chqMTD), '$'+money(chqYTD))}
     ${fRaw('RevPAR (A&B + Hab)', '$'+money(num(g(38))), '–','–')}
     ${fMoney('TOTAL HOTEL',39,'total','TOTAL HOTEL')}
-  </table>
+  </table></div>
   <div class="note">MTD = mes en curso hasta la fecha · YTD = año hasta la fecha. Presupuesto y Variación se agregan al conectar la pestaña PRESUPUESTO. Los indicadores (%, ADR, RevPAR, cheque) se recalculan, no se suman.</div>`;
   document.getElementById('dailyBody').innerHTML=kpis+t;
 }
