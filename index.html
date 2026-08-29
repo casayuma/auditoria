@@ -119,7 +119,7 @@ select:focus{border-color:var(--blue)}
   </header>
   <nav class="tabs" id="tabs"></nav>
   <main>
-    <section class="view" id="v-daily"><div class="ctl"><label for="daySel">Fecha</label><select id="daySel" onchange="renderDaily()"></select><button class="cap-btn" style="padding:9px 16px" onclick="descargarPDF()">Descargar PDF</button></div><div id="dailyBody"></div></section>
+    <section class="view" id="v-daily"><div class="ctl"><label for="daySel">Fecha</label><select id="daySel" onchange="renderDaily()" style="max-width:150px"></select><button class="cap-btn" style="padding:9px 16px" onclick="descargarPDF()">PDF</button></div><div id="dailyBody"></div></section>
     <section class="view" id="v-captura"><div id="capturaBody"></div></section>
     <section class="view" id="v-ajustes"><div id="ajustesBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
     <section class="view" id="v-control"><div id="controlBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
@@ -225,7 +225,7 @@ function renderDaily(){
     if(!DATA.presupuesto||!mesCol) return null;
     const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
     const target=norm(nombre);
-    for(let k=1;k<DATA.presupuesto.length;k++){
+    for(let k=0;k<DATA.presupuesto.length;k++){
       if(norm(DATA.presupuesto[k][0])===target) return num(DATA.presupuesto[k][mesCol]);
     }
     return null;
