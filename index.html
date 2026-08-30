@@ -656,6 +656,34 @@ function detalleCuadre(idx){
     </div>`;
   document.getElementById('cuadreDetBody').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
+function detalleDia(fecha){
+  document.getElementById('ctrlDiaBody').innerHTML='<div class="loading"><div class="spinner"></div>Consultando '+fecha+'…</div>';
+  document.getElementById('ctrlDiaBody').scrollIntoView({behavior:'smooth',block:'nearest'});
+  apiGet({accion:'detalleDiaControl',id:SESSION.id,pin:SESSION.pin,fecha:fecha}).then(j=>{
+    if(!j.ok){ document.getElementById('ctrlDiaBody').innerHTML=`<div class="errbox">${j.error}</div>`; return; }
+    const d=j.det;
+    if(d.error){ document.getElementById('ctrlDiaBody').innerHTML=`<div class="errbox">${d.error}</div>`; return; }
+    // sin clasificar
+    let scHtml='';
+    if(d.sinClasif.length){
+      const filas=d.sinClasif.map(x=>`<tr><td>${x.concepto}</td><td style="text-align:center">${x.codigo}</td><td style="text-align:center">${x.cat}</td><td>${x.reserva}</td><td class="num">$${money(x.monto)}</td></tr>`).join('');
+      scHtml=`<div class="section-eyebrow" style="margin-top:18px">Transacciones sin clasificar · ${fecha}</div>
+        <table class="aud"><thead><tr><th>Concepto</th><th style="text-align:center">Código</th><th style="text-align:center">Categoría</th><th>Reserva</th><th style="text-align:right">Monto</th></tr></thead><tbody>${filas}</tbody></table>
+        <div class="note">Estas transacciones no las clasifica el motor. Para arreglarlo: identifica el patrón y agrégalo a la fórmula de RAW (como se hizo con Pet Fee, Service Fee).</div>`;
+    }else{
+      scHtml=`<div class="note" style="margin-top:14px">✓ Sin transacciones sin clasificar este día.</div>`;
+    }
+    // cuartos
+    const c=d.cuartos;
+    const cuadra=c.totalOcupados===c.conRenta;
+    const filasC=c.detalle.map(x=>`<tr><td>${x.habitacion}</td><td style="text-align:center">${x.conRenta?'<span style="color:var(--ok)">Con renta</span>':'<span style="color:var(--bad)">SIN renta</span>'}</td><td class="num">$${money(x.renta)}</td></tr>`).join('');
+    const cHtml=`<div class="section-eyebrow" style="margin-top:22px">Cuartos · ${fecha} · ${c.totalOcupados} ocupados, ${c.conRenta} con renta ${cuadra?'<span style="color:var(--ok)">✓</span>':'<span style="color:var(--bad)">✗ no cuadra</span>'}</div>
+      <table class="aud"><thead><tr><th>Habitación</th><th style="text-align:center">Estado</th><th style="text-align:right">Renta</th></tr></thead><tbody>${filasC}</tbody></table>
+      <div class="note">Los cuartos "SIN renta" son ocupados que no generaron cargo de hospedaje ese día (posible cortesía/uso casa no marcado, o cargo faltante). Revísalos en Cloudbeds.</div>`;
+    document.getElementById('ctrlDiaBody').innerHTML=`<div style="padding:12px 14px;background:var(--wool);border-radius:2px;margin-top:16px"><strong style="font-family:var(--disp)">Detalle del ${fecha}</strong></div>${scHtml}${cHtml}`;
+    document.getElementById('ctrlDiaBody').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }).catch(e=>{ document.getElementById('ctrlDiaBody').innerHTML='<div class="errbox">No se pudo consultar.</div>'; });
+}
 function renderControl(){
   const rows=DATA.control.slice(1).filter(r=>r[0]); const M={};
   window._CTRL_ROWS=rows;
@@ -683,7 +711,7 @@ function detalleMes(mesKey){
   }
   const body=conRojo.map(r=>{
     const fecha=String(r[0]).slice(0,10);
-    return `<tr>
+    return `<tr class="clickrow" onclick="detalleDia('${fecha}')">
       <td>${fecha}</td>
       <td style="text-align:center">${est(r[2])}</td>
       <td style="text-align:center">${est(r[3])}</td>
@@ -696,7 +724,7 @@ function detalleMes(mesKey){
   document.getElementById('ctrlDetBody').innerHTML=`
     <div class="section-eyebrow" style="margin-top:22px">${mesKey} · ${conRojo.length} días con foco rojo</div>
     <div style="overflow-x:auto"><table class="aud"><thead><tr><th>Fecha</th><th style="text-align:center">Terminales</th><th style="text-align:center">Cuartos</th><th style="text-align:center">Sin clasif</th><th style="text-align:center">Efvo Front</th><th style="text-align:center">Efvo Rest</th><th style="text-align:center">Ajustes</th></tr></thead><tbody>${body}</tbody></table></div>
-    <div class="note">Solo se muestran los días con al menos un cruce en rojo. "Cuartos" en rojo = los cuartos ocupados no cuadraron con los que generaron renta ese día.</div>`;
+    <div class="note">Clic en un día para ver la causa: transacciones sin clasificar y desglose de cuartos ocupados vs. con renta.</div><div id="ctrlDiaBody"></div>`;
   document.getElementById('ctrlDetBody').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
