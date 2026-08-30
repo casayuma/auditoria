@@ -657,13 +657,49 @@ function detalleCuadre(idx){
   document.getElementById('cuadreDetBody').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function renderControl(){
-  const rows=DATA.control.slice(1).filter(r=>r[0]);const M={};
+  const rows=DATA.control.slice(1).filter(r=>r[0]); const M={};
+  window._CTRL_ROWS=rows;
   rows.forEach(r=>{const f=parseFecha(r[0]);if(!f)return;const key=f.y+'-'+String(f.m+1).padStart(2,'0');if(!M[key])M[key]={dias:0,term:0,cuartos:0,sc:0,eff:0,efr:0,aj:0};const m=M[key];m.dias++;if(r[2]==='REVISAR')m.term++;if(r[3]==='REVISAR')m.cuartos++;if(r[5]==='REVISAR')m.sc++;if(r[6]==='REVISAR')m.eff++;if(r[7]==='REVISAR')m.efr++;if(r[9]==='REVISAR')m.aj++;});
-  const keys=Object.keys(M).sort();
+  const keys=Object.keys(M).sort().reverse();
   if(!keys.length){document.getElementById('controlBody').innerHTML='<div class="empty">Sin datos de control aún.</div>';return;}
-  const body=keys.map(k=>{const m=M[k],tot=m.term+m.cuartos+m.sc+m.eff+m.efr+m.aj;const sem=tot===0?'<span class="badge sem-ok">🟢</span>':tot<=3?'<span class="badge sem-warn">🟡</span>':'<span class="badge sem-bad">🔴</span>';const cell=v=>v>0?`<td class="num" style="background:#f2d6dc;color:var(--bad)">${v}</td>`:`<td class="num">0</td>`;return `<tr><td>${k}</td><td class="num">${m.dias}</td>${cell(m.term)}${cell(m.cuartos)}${cell(m.sc)}${cell(m.eff)}${cell(m.efr)}${cell(m.aj)}<td style="text-align:center">${sem}</td></tr>`;}).join('');
-  document.getElementById('controlBody').innerHTML=`<div class="section-eyebrow">Control mensual · días con foco rojo por tipo</div><table class="aud"><thead><tr><th>Mes</th><th style="text-align:right">Días</th><th style="text-align:right">Terminales</th><th style="text-align:right">Cuartos</th><th style="text-align:right">Sin clasif</th><th style="text-align:right">Efvo Front</th><th style="text-align:right">Efvo Rest</th><th style="text-align:right">Ajustes</th><th style="text-align:center">Semáforo</th></tr></thead><tbody>${body}</tbody></table><div class="note">Cada número = días de ese mes con foco rojo. Terminales/efectivo salen 0 si no se ha capturado el cuadre.</div>`;
+  const body=keys.map(k=>{const m=M[k],tot=m.term+m.cuartos+m.sc+m.eff+m.efr+m.aj;const sem=tot===0?'<span class="badge sem-ok">🟢</span>':tot<=3?'<span class="badge sem-warn">🟡</span>':'<span class="badge sem-bad">🔴</span>';const cell=v=>v>0?`<td class="num" style="background:#f2d6dc;color:var(--bad)">${v}</td>`:`<td class="num">0</td>`;
+    return `<tr class="clickrow" onclick="detalleMes('${k}')"><td>${k}</td><td class="num">${m.dias}</td>${cell(m.term)}${cell(m.cuartos)}${cell(m.sc)}${cell(m.eff)}${cell(m.efr)}${cell(m.aj)}<td style="text-align:center">${sem}</td></tr>`;}).join('');
+  document.getElementById('controlBody').innerHTML=`<div class="section-eyebrow">Control mensual · días con foco rojo por tipo</div>
+    <table class="aud"><thead><tr><th>Mes</th><th style="text-align:right">Días</th><th style="text-align:right">Terminales</th><th style="text-align:right">Cuartos</th><th style="text-align:right">Sin clasif</th><th style="text-align:right">Efvo Front</th><th style="text-align:right">Efvo Rest</th><th style="text-align:right">Ajustes</th><th style="text-align:center">Semáforo</th></tr></thead><tbody>${body}</tbody></table>
+    <div class="note">Clic en un mes para ver los días con foco rojo y su detalle. Terminales/efectivo salen 0 si no se ha capturado el cuadre.</div>
+    <div id="ctrlDetBody"></div>`;
 }
+function detalleMes(mesKey){
+  const rows=(window._CTRL_ROWS||[]).filter(r=>{ const f=parseFecha(r[0]); return f && (f.y+'-'+String(f.m+1).padStart(2,'0'))===mesKey; });
+  rows.sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
+  // solo días con al menos un foco rojo
+  const conRojo=rows.filter(r=> r[2]==='REVISAR'||r[3]==='REVISAR'||r[5]==='REVISAR'||r[6]==='REVISAR'||r[7]==='REVISAR'||r[9]==='REVISAR');
+  const est=(v)=>{ if(v==='REVISAR') return '<span class="tipo-chip t-void">Revisar</span>'; if(v==='OK') return '<span style="color:var(--ok)">OK</span>'; if(String(v||'').indexOf('PENDIENTE')===0) return '<span style="color:var(--cactus);font-size:11px">Pend.</span>'; return '<span style="color:#c9c0a8">—</span>'; };
+  const dif=(v)=>{ const n=num(v); return n!==0?`<span style="color:var(--bad)">$${money(n)}</span>`:'<span style="color:#c9c0a8">—</span>'; };
+  if(!conRojo.length){
+    document.getElementById('ctrlDetBody').innerHTML=`<div class="section-eyebrow" style="margin-top:20px">${mesKey} · sin focos rojos ✓</div><div class="note">Todos los días de ${mesKey} cuadran.</div>`;
+    document.getElementById('ctrlDetBody').scrollIntoView({behavior:'smooth',block:'nearest'});
+    return;
+  }
+  const body=conRojo.map(r=>{
+    const fecha=String(r[0]).slice(0,10);
+    return `<tr>
+      <td>${fecha}</td>
+      <td style="text-align:center">${est(r[2])}</td>
+      <td style="text-align:center">${est(r[3])}</td>
+      <td style="text-align:center">${est(r[5])}<br>${dif(r[4])}</td>
+      <td style="text-align:center">${est(r[6])}</td>
+      <td style="text-align:center">${est(r[7])}</td>
+      <td style="text-align:center">${est(r[9])}<br>${dif(r[8])}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('ctrlDetBody').innerHTML=`
+    <div class="section-eyebrow" style="margin-top:22px">${mesKey} · ${conRojo.length} días con foco rojo</div>
+    <div style="overflow-x:auto"><table class="aud"><thead><tr><th>Fecha</th><th style="text-align:center">Terminales</th><th style="text-align:center">Cuartos</th><th style="text-align:center">Sin clasif</th><th style="text-align:center">Efvo Front</th><th style="text-align:center">Efvo Rest</th><th style="text-align:center">Ajustes</th></tr></thead><tbody>${body}</tbody></table></div>
+    <div class="note">Solo se muestran los días con al menos un cruce en rojo. "Cuartos" en rojo = los cuartos ocupados no cuadraron con los que generaron renta ese día.</div>`;
+  document.getElementById('ctrlDetBody').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
 </script>
 </body>
 </html>
