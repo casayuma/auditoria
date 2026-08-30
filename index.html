@@ -461,36 +461,69 @@ function pintarCuadre(c, transferEstado){
 
 function renderAjustes(){
   const allRows=DATA.ajustes.slice(1).filter(r=>r[5]);
-  // meses disponibles (col A = fecha)
+  // meses disponibles, más reciente arriba
   const meses=new Set();
   allRows.forEach(r=>{ const f=parseFecha(r[0]); if(f) meses.add(f.y+'-'+String(f.m+1).padStart(2,'0')); });
   const mesesArr=Array.from(meses).sort().reverse();
-  const opts=['<option value="Todos">Todos los meses</option>'].concat(mesesArr.map(m=>`<option value="${m}">${m}</option>`)).join('');
+  const optsMes=['<option value="Todos">Todos los meses</option>'].concat(mesesArr.map(m=>`<option value="${m}">${m}</option>`)).join('');
+  // usuarios disponibles
+  const usuarios=Array.from(new Set(allRows.map(r=>String(r[5]).trim()))).sort();
+  const optsUser=['<option value="Todos">Todos los usuarios</option>'].concat(usuarios.map(u=>`<option value="${u}">${u}</option>`)).join('');
   document.getElementById('ajustesBody').innerHTML=`
-    <div class="ctl"><label>Mes</label><select id="ajMes" onchange="pintarAjustes()">${opts}</select></div>
+    <div class="ctl">
+      <label>Mes</label><select id="ajMes" onchange="pintarAjustes()">${optsMes}</select>
+      <label>Usuario</label><select id="ajUser" onchange="pintarAjustes()">${optsUser}</select>
+    </div>
     <div id="ajustesTabla"></div>`;
   pintarAjustes();
 }
 function pintarAjustes(){
   const mes=document.getElementById('ajMes').value;
+  const userSel=document.getElementById('ajUser').value;
   let rows=DATA.ajustes.slice(1).filter(r=>r[5]);
   if(mes!=='Todos') rows=rows.filter(r=>{ const f=parseFecha(r[0]); return f && (f.y+'-'+String(f.m+1).padStart(2,'0'))===mes; });
+
+  // si hay un usuario elegido, mostrar SU concentrado (por mes + por concepto)
+  if(userSel!=='Todos'){
+    concentradoUsuario(userSel, mes);
+    return;
+  }
+
+  // tabla general por usuario
   const inact=new Set(CONFIG.INACTIVOS);const U={};
   rows.forEach(r=>{const u=String(r[5]).trim(),t=(r[2]||'').toUpperCase(),m=Math.abs(num(r[4]));if(!U[u])U[u]={aN:0,aM:0,vN:0,vM:0};if(t==='VOID'){U[u].vN++;U[u].vM+=m;}else{U[u].aN++;U[u].aM+=m;}});
   const users=Object.keys(U).sort((a,b)=>(U[b].aM+U[b].vM)-(U[a].aM+U[a].vM));
   if(!users.length){ document.getElementById('ajustesTabla').innerHTML='<div class="empty">Sin ajustes en este periodo.</div>'; return; }
-  const body=users.map(u=>{const d=U[u],tot=d.aM+d.vM,cls=inact.has(u)?'inactivo clickrow':'clickrow',tag=inact.has(u)?' <span style="font-size:10px;opacity:.7">(inactivo)</span>':'';return `<tr class="${cls}" onclick="detalleUsuario('${u.replace(/'/g,"\\'")}')"><td>${u}${tag}</td><td class="num">${d.aN}</td><td class="num">$${money(d.aM)}</td><td class="num">${d.vN}</td><td class="num">$${money(d.vM)}</td><td class="num"><strong>$${money(tot)}</strong></td></tr>`;}).join('');
-  document.getElementById('ajustesTabla').innerHTML=`<div class="section-eyebrow">Ajustes y anulaciones · por usuario${document.getElementById('ajMes').value!=='Todos'?' · '+document.getElementById('ajMes').value:''}</div><table class="aud"><thead><tr><th>Usuario</th><th style="text-align:right"># Ajustes</th><th style="text-align:right">$ Ajustes</th><th style="text-align:right"># Voids</th><th style="text-align:right">$ Voids</th><th style="text-align:right">Total</th></tr></thead><tbody>${body}</tbody></table><div class="note">Clic en un usuario para ver el detalle y justificar.</div><div id="detBody"></div>`;
+  const body=users.map(u=>{const d=U[u],tot=d.aM+d.vM,cls=inact.has(u)?'inactivo clickrow':'clickrow',tag=inact.has(u)?' <span style="font-size:10px;opacity:.7">(inactivo)</span>':'';return `<tr class="${cls}" onclick="document.getElementById('ajUser').value='${u.replace(/'/g,"\\'")}';pintarAjustes()"><td>${u}${tag}</td><td class="num">${d.aN}</td><td class="num">$${money(d.aM)}</td><td class="num">${d.vN}</td><td class="num">$${money(d.vM)}</td><td class="num"><strong>$${money(tot)}</strong></td></tr>`;}).join('');
+  document.getElementById('ajustesTabla').innerHTML=`<div class="section-eyebrow">Ajustes y anulaciones · por usuario${mes!=='Todos'?' · '+mes:''}</div><table class="aud"><thead><tr><th>Usuario</th><th style="text-align:right"># Ajustes</th><th style="text-align:right">$ Ajustes</th><th style="text-align:right"># Voids</th><th style="text-align:right">$ Voids</th><th style="text-align:right">Total</th></tr></thead><tbody>${body}</tbody></table><div class="note">Clic en un usuario (o elígelo arriba) para ver su concentrado por mes y por concepto.</div>`;
 }
-function detalleUsuario(u){
-  const rows=DATA.ajustes.slice(1).filter(r=>String(r[5]||'').trim()===u);
-  rows.sort((a,b)=>Math.abs(num(b[4]))-Math.abs(num(a[4])));
-  let total=0;rows.forEach(r=>total+=Math.abs(num(r[4])));
-  const body=rows.map(r=>{const t=(r[2]||'').toUpperCase(),cls=t==='VOID'?'void':'adj',idTx=r[8]||'';const just=r[9]||'',justBy=r[10]||'';
-    const justCell=just?`<div style="font-size:11px">${just}<br><span style="color:var(--cactus)">${justBy}</span></div>`:`<textarea class="just-input" id="j_${idTx}" placeholder="Justificación…"></textarea><button class="just-btn" onclick="justificar('${idTx}')">Guardar</button>`;
-    return `<tr><td>${r[0]}</td><td><span class="pill ${cls}">${t}</span></td><td>${r[3]||''}</td><td class="num">$${money(Math.abs(num(r[4])))}</td><td>${r[6]||''}</td><td style="min-width:200px">${justCell}</td></tr>`;}).join('');
-  document.getElementById('detBody').innerHTML=`<div class="section-eyebrow">Detalle · ${u} · ${rows.length} movimientos · $${money(total)}</div><table class="aud"><thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th style="text-align:right">Monto</th><th>Habitación</th><th>Justificación</th></tr></thead><tbody>${body}</tbody></table>`;
-  document.getElementById('detBody').scrollIntoView({behavior:'smooth',block:'nearest'});
+function concentradoUsuario(u, mesFiltro){
+  let rows=DATA.ajustes.slice(1).filter(r=>String(r[5]||'').trim()===u);
+  if(mesFiltro!=='Todos') rows=rows.filter(r=>{ const f=parseFecha(r[0]); return f && (f.y+'-'+String(f.m+1).padStart(2,'0'))===mesFiltro; });
+  let total=0; rows.forEach(r=>total+=Math.abs(num(r[4])));
+
+  // por MES (más reciente arriba)
+  const M={};
+  rows.forEach(r=>{ const f=parseFecha(r[0]); if(!f)return; const k=f.y+'-'+String(f.m+1).padStart(2,'0'); const t=(r[2]||'').toUpperCase(), m=Math.abs(num(r[4])); if(!M[k])M[k]={aN:0,aM:0,vN:0,vM:0}; if(t==='VOID'){M[k].vN++;M[k].vM+=m;}else{M[k].aN++;M[k].aM+=m;} });
+  const meses=Object.keys(M).sort().reverse();
+  const filaMes=meses.map(k=>{const d=M[k];return `<tr><td>${k}</td><td class="num">${d.aN}</td><td class="num">$${money(d.aM)}</td><td class="num">${d.vN}</td><td class="num">$${money(d.vM)}</td><td class="num"><strong>$${money(d.aM+d.vM)}</strong></td></tr>`;}).join('');
+
+  // por CONCEPTO (col D = índice 3)
+  const C={};
+  rows.forEach(r=>{ const c=String(r[3]||'—').trim()||'—'; const m=Math.abs(num(r[4])); if(!C[c])C[c]={n:0,m:0}; C[c].n++; C[c].m+=m; });
+  const conceptos=Object.keys(C).sort((a,b)=>C[b].m-C[a].m);
+  const filaConcepto=conceptos.map(c=>`<tr><td>${c}</td><td class="num">${C[c].n}</td><td class="num">$${money(C[c].m)}</td></tr>`).join('');
+
+  document.getElementById('ajustesTabla').innerHTML=`
+    <div style="padding:14px 16px;background:var(--wool);border-radius:2px;margin-bottom:14px">
+      <strong style="font-family:var(--disp);font-size:18px">${u}</strong>
+      <div style="font-size:12px;color:var(--cactus);margin-top:4px">${rows.length} movimientos · Total $${money(total)}${mesFiltro!=='Todos'?' · '+mesFiltro:''}</div>
+    </div>
+    <div class="section-eyebrow">Concentrado por mes</div>
+    <table class="aud"><thead><tr><th>Mes</th><th style="text-align:right"># Ajustes</th><th style="text-align:right">$ Ajustes</th><th style="text-align:right"># Voids</th><th style="text-align:right">$ Voids</th><th style="text-align:right">Total</th></tr></thead><tbody>${filaMes}</tbody></table>
+    <div class="section-eyebrow" style="margin-top:22px">Desglose por concepto</div>
+    <table class="aud"><thead><tr><th>Concepto</th><th style="text-align:right"># Veces</th><th style="text-align:right">Monto</th></tr></thead><tbody>${filaConcepto}</tbody></table>
+    <div class="note">Cambia el usuario o pon "Todos" arriba para volver a la vista general.</div>`;
 }
 async function justificar(idTx){
   const el=document.getElementById('j_'+idTx);const texto=el.value.trim();
