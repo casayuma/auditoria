@@ -522,6 +522,10 @@ function pintarAuditoria(d){
     <div style="padding:16px;background:var(--wool);border-radius:2px;margin-bottom:14px">
       <strong style="font-family:var(--disp);font-size:19px">Auditoría del ${d.fecha}</strong>
       <div style="font-size:13px;color:var(--ink);margin-top:6px">Total negativo del día: <strong style="color:var(--bad)">$${money(d.total)}</strong> · ${d.items.length} movimientos</div>
+      <div style="margin-top:8px;font-size:11.5px;color:var(--cactus);border-top:1px solid var(--line);padding-top:8px">
+        <div>De ese total: <strong>$${money(d.aoTotal)}</strong> son código 2000 neto de IVA → van a la columna <strong>Ajustes/Correcciones (AO)</strong> del reporte.</div>
+        <div>El resto ($${money(d.otrosTotal)} bruto: IVA, hospedaje, etc.) no va a AO.</div>
+      </div>
       <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">${chips}</div>
     </div>
     <div class="ctl"><label>Filtrar tipo</label><select id="audTipoFiltro" onchange="pintarTablaAud()">${opciones}</select></div>
@@ -537,12 +541,13 @@ function pintarTablaAud(){
     const justCell=just
       ? `<div style="font-size:11px;color:var(--ok)">✓ ${just}<br><span style="color:var(--cactus)">${it.justificadoPor||''}</span></div>`
       : `<textarea class="just-input" id="ja_${it.idTx}" placeholder="¿Por qué?"></textarea><button class="just-btn" onclick="justificarAud('${it.idTx}')">Guardar</button>`;
+    const aoTag = it.vaAO ? ' <span style="font-size:9px;background:var(--gold);color:var(--ink);padding:1px 5px;border-radius:8px;letter-spacing:.04em">AO</span>' : '';
     return `<tr>
       <td>${it.hora}</td>
       <td>${it.usuario}</td>
       <td><span class="tipo-chip ${claseTipo(it.tipo)}">${it.tipo}</span></td>
       <td>${it.concepto}</td>
-      <td style="text-align:center">${it.codigo}</td>
+      <td style="text-align:center">${it.codigo}${aoTag}</td>
       <td style="text-align:center">${it.hab}</td>
       <td style="text-align:center">${it.reserva}</td>
       <td class="num" style="color:var(--bad);font-weight:600">$${money(it.monto)}</td>
@@ -557,11 +562,15 @@ function pintarTablaAud(){
 async function justificarAud(idTx){
   const el=document.getElementById('ja_'+idTx); const texto=el.value.trim();
   if(!texto){ el.style.borderColor='var(--bad)'; return; }
+  const it=(window._AUD.items||[]).find(x=>x.idTx===idTx)||{};
   el.disabled=true;
   try{
-    const j=await apiPost({accion:'justificar',id:SESSION.id,pin:SESSION.pin,idTx:idTx,texto:texto});
+    const j=await apiPost({accion:'justificar',id:SESSION.id,pin:SESSION.pin,idTx:idTx,texto:texto,
+      fecha:window._AUD.fecha,tipo:it.tipo||'',concepto:it.concepto||'',monto:it.monto||0});
     if(!j.ok){ alert(j.error); el.disabled=false; return; }
-    el.parentElement.innerHTML=`<div style="font-size:11px;color:var(--ok)">✓ ${texto}<br><span style="color:var(--cactus)">${SESSION.nombre}</span></div>`;
+    // actualizar en memoria para que persista al filtrar
+    if(it){ it.justificacion=texto; it.justificadoPor=j.por||SESSION.nombre; }
+    el.parentElement.innerHTML=`<div style="font-size:11px;color:var(--ok)">✓ ${texto}<br><span style="color:var(--cactus)">${j.por||SESSION.nombre}</span></div>`;
   }catch(e){ alert('No se pudo guardar.'); el.disabled=false; }
 }
 function renderHistorial(){
