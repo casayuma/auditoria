@@ -91,6 +91,9 @@ select:focus{border-color:var(--blue)}
 .cap-sub{font-size:12px;color:var(--cactus);margin:-6px 0 8px}
 .cuadre-cat{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--cactus);margin:12px 0 4px}
 .line{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;gap:12px;border-bottom:1px solid rgba(0,0,0,.05)}
+
+.tipo-chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:600}
+.t-void{background:#f2d6dc;color:var(--bad)} .t-refund{background:#e6d9ec;color:var(--purple)} .t-adj{background:#f2e6cf;color:var(--warn)} .t-otro{background:#dce4dc;color:var(--cactus)}
 .note{font-size:11.5px;color:var(--cactus);margin-top:18px;font-style:italic}
 @media(max-width:560px){.dr-table td{padding:8px 6px;font-size:12.5px}main{padding:20px 12px 70px}.cap-grid{grid-template-columns:1fr}}
 </style>
@@ -457,11 +460,27 @@ function pintarCuadre(c, transferEstado){
 }
 
 function renderAjustes(){
-  const rows=DATA.ajustes.slice(1).filter(r=>r[5]);const inact=new Set(CONFIG.INACTIVOS);const U={};
+  const allRows=DATA.ajustes.slice(1).filter(r=>r[5]);
+  // meses disponibles (col A = fecha)
+  const meses=new Set();
+  allRows.forEach(r=>{ const f=parseFecha(r[0]); if(f) meses.add(f.y+'-'+String(f.m+1).padStart(2,'0')); });
+  const mesesArr=Array.from(meses).sort().reverse();
+  const opts=['<option value="Todos">Todos los meses</option>'].concat(mesesArr.map(m=>`<option value="${m}">${m}</option>`)).join('');
+  document.getElementById('ajustesBody').innerHTML=`
+    <div class="ctl"><label>Mes</label><select id="ajMes" onchange="pintarAjustes()">${opts}</select></div>
+    <div id="ajustesTabla"></div>`;
+  pintarAjustes();
+}
+function pintarAjustes(){
+  const mes=document.getElementById('ajMes').value;
+  let rows=DATA.ajustes.slice(1).filter(r=>r[5]);
+  if(mes!=='Todos') rows=rows.filter(r=>{ const f=parseFecha(r[0]); return f && (f.y+'-'+String(f.m+1).padStart(2,'0'))===mes; });
+  const inact=new Set(CONFIG.INACTIVOS);const U={};
   rows.forEach(r=>{const u=String(r[5]).trim(),t=(r[2]||'').toUpperCase(),m=Math.abs(num(r[4]));if(!U[u])U[u]={aN:0,aM:0,vN:0,vM:0};if(t==='VOID'){U[u].vN++;U[u].vM+=m;}else{U[u].aN++;U[u].aM+=m;}});
   const users=Object.keys(U).sort((a,b)=>(U[b].aM+U[b].vM)-(U[a].aM+U[a].vM));
+  if(!users.length){ document.getElementById('ajustesTabla').innerHTML='<div class="empty">Sin ajustes en este periodo.</div>'; return; }
   const body=users.map(u=>{const d=U[u],tot=d.aM+d.vM,cls=inact.has(u)?'inactivo clickrow':'clickrow',tag=inact.has(u)?' <span style="font-size:10px;opacity:.7">(inactivo)</span>':'';return `<tr class="${cls}" onclick="detalleUsuario('${u.replace(/'/g,"\\'")}')"><td>${u}${tag}</td><td class="num">${d.aN}</td><td class="num">$${money(d.aM)}</td><td class="num">${d.vN}</td><td class="num">$${money(d.vM)}</td><td class="num"><strong>$${money(tot)}</strong></td></tr>`;}).join('');
-  document.getElementById('ajustesBody').innerHTML=`<div class="section-eyebrow">Auditoría de ajustes y anulaciones · por usuario</div><table class="aud"><thead><tr><th>Usuario</th><th style="text-align:right"># Ajustes</th><th style="text-align:right">$ Ajustes</th><th style="text-align:right"># Voids</th><th style="text-align:right">$ Voids</th><th style="text-align:right">Total</th></tr></thead><tbody>${body}</tbody></table><div class="note">Clic en un usuario para ver el detalle y justificar.</div><div id="detBody"></div>`;
+  document.getElementById('ajustesTabla').innerHTML=`<div class="section-eyebrow">Ajustes y anulaciones · por usuario${document.getElementById('ajMes').value!=='Todos'?' · '+document.getElementById('ajMes').value:''}</div><table class="aud"><thead><tr><th>Usuario</th><th style="text-align:right"># Ajustes</th><th style="text-align:right">$ Ajustes</th><th style="text-align:right"># Voids</th><th style="text-align:right">$ Voids</th><th style="text-align:right">Total</th></tr></thead><tbody>${body}</tbody></table><div class="note">Clic en un usuario para ver el detalle y justificar.</div><div id="detBody"></div>`;
 }
 function detalleUsuario(u){
   const rows=DATA.ajustes.slice(1).filter(r=>String(r[5]||'').trim()===u);
@@ -493,29 +512,47 @@ function cargarAuditoria(){
 }
 function pintarAuditoria(d){
   if(d.error){ document.getElementById('auditoriaBody').innerHTML=`<div class="errbox">${d.error}</div>`; return; }
-  const seccion=(titulo,obj,color)=>{
-    if(!obj.items.length) return `<div class="section-eyebrow" style="margin-top:22px">${titulo} · 0 · $0.00</div><div class="note">Sin movimientos de este tipo.</div>`;
-    const filas=obj.items.map(it=>{
-      const just=it.justificacion||'';
-      const justCell = just
-        ? `<div style="font-size:11px;color:var(--ok)">✓ ${just}</div>`
-        : `<textarea class="just-input" id="ja_${it.idTx}" placeholder="Justificar…"></textarea><button class="just-btn" onclick="justificarAud('${it.idTx}')">Guardar</button>`;
-      return `<tr><td>${it.hora}</td><td>${it.concepto}</td><td class="num" style="color:${it.monto<0?'var(--bad)':'inherit'}">$${money(it.monto)}</td><td>${it.usuario}</td><td>${it.reserva}</td><td style="min-width:180px">${justCell}</td></tr>`;
-    }).join('');
-    return `<div class="section-eyebrow" style="margin-top:22px">${titulo} · ${obj.items.length} · <span style="color:${color}">$${money(obj.total)}</span></div>
-      <table class="aud"><thead><tr><th>Hora</th><th>Concepto</th><th style="text-align:right">Monto</th><th>Usuario</th><th>Reserva</th><th>Justificación</th></tr></thead><tbody>${filas}</tbody></table>`;
-  };
-  const totalGeneral=d.voids.total+d.refunds.total+d.adjustments.total+d.correcciones.total;
+  window._AUD=d;
+  if(!d.items.length){ document.getElementById('auditoriaBody').innerHTML=`<div style="padding:14px 16px;background:var(--wool);border-radius:2px;margin-bottom:8px"><strong style="font-family:var(--disp);font-size:18px">Auditoría del ${d.fecha}</strong></div><div class="empty">Sin movimientos negativos este día. ✓</div>`; return; }
+  // resumen por tipo
+  const porTipo={}; d.items.forEach(it=>{ if(!porTipo[it.tipo])porTipo[it.tipo]={n:0,m:0}; porTipo[it.tipo].n++; porTipo[it.tipo].m+=it.monto; });
+  const chips=Object.keys(porTipo).map(t=>`<span class="tipo-chip ${claseTipo(t)}">${t}: ${porTipo[t].n} · $${money(porTipo[t].m)}</span>`).join('');
+  const opciones=['Todos'].concat(Object.keys(porTipo)).map(t=>`<option value="${t}">${t}</option>`).join('');
   document.getElementById('auditoriaBody').innerHTML=`
-    <div style="padding:14px 16px;background:var(--wool);border-radius:2px;margin-bottom:8px">
-      <strong style="font-family:var(--disp);font-size:18px">Auditoría del ${d.fecha}</strong>
-      <div style="font-size:12px;color:var(--cactus);margin-top:4px">Total revisable del día: <strong style="color:var(--bad)">$${money(totalGeneral)}</strong></div>
+    <div style="padding:16px;background:var(--wool);border-radius:2px;margin-bottom:14px">
+      <strong style="font-family:var(--disp);font-size:19px">Auditoría del ${d.fecha}</strong>
+      <div style="font-size:13px;color:var(--ink);margin-top:6px">Total negativo del día: <strong style="color:var(--bad)">$${money(d.total)}</strong> · ${d.items.length} movimientos</div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">${chips}</div>
     </div>
-    ${seccion('Anulaciones (voids)',d.voids,'var(--bad)')}
-    ${seccion('Reembolsos (refunds)',d.refunds,'var(--bad)')}
-    ${seccion('Ajustes (adjustments)',d.adjustments,'var(--warn)')}
-    ${seccion('Ajustes/Correcciones (transferencias, contracargos)',d.correcciones,'var(--bad)')}
-    <div class="note">Datos en vivo de Cloudbeds para la fecha elegida. Las propinas/fees se auditan aparte.</div>`;
+    <div class="ctl"><label>Filtrar tipo</label><select id="audTipoFiltro" onchange="pintarTablaAud()">${opciones}</select></div>
+    <div id="audTabla"></div>`;
+  pintarTablaAud();
+}
+function claseTipo(t){ return t==='Anulación'?'t-void':t==='Reembolso'?'t-refund':t==='Ajuste'?'t-adj':'t-otro'; }
+function pintarTablaAud(){
+  const d=window._AUD; const filtro=document.getElementById('audTipoFiltro').value;
+  const items=(filtro==='Todos')?d.items:d.items.filter(x=>x.tipo===filtro);
+  const filas=items.map(it=>{
+    const just=it.justificacion||'';
+    const justCell=just
+      ? `<div style="font-size:11px;color:var(--ok)">✓ ${just}<br><span style="color:var(--cactus)">${it.justificadoPor||''}</span></div>`
+      : `<textarea class="just-input" id="ja_${it.idTx}" placeholder="¿Por qué?"></textarea><button class="just-btn" onclick="justificarAud('${it.idTx}')">Guardar</button>`;
+    return `<tr>
+      <td>${it.hora}</td>
+      <td>${it.usuario}</td>
+      <td><span class="tipo-chip ${claseTipo(it.tipo)}">${it.tipo}</span></td>
+      <td>${it.concepto}</td>
+      <td style="text-align:center">${it.codigo}</td>
+      <td style="text-align:center">${it.hab}</td>
+      <td style="text-align:center">${it.reserva}</td>
+      <td class="num" style="color:var(--bad);font-weight:600">$${money(it.monto)}</td>
+      <td style="min-width:170px">${justCell}</td></tr>`;
+  }).join('');
+  document.getElementById('audTabla').innerHTML=`
+    <div style="overflow-x:auto"><table class="aud"><thead><tr>
+      <th>Hora</th><th>Usuario</th><th>Tipo</th><th>Concepto</th><th style="text-align:center">Código</th><th style="text-align:center">Hab</th><th style="text-align:center">Reserva</th><th style="text-align:right">Monto</th><th>Justificación (por qué)</th>
+    </tr></thead><tbody>${filas}</tbody></table></div>
+    <div class="note">Todo monto negativo del día. Cada movimiento aparece una vez con su tipo real. Datos en vivo de Cloudbeds.</div>`;
 }
 async function justificarAud(idTx){
   const el=document.getElementById('ja_'+idTx); const texto=el.value.trim();
