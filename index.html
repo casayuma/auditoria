@@ -91,11 +91,14 @@ select:focus{border-color:var(--blue)}
 .cap-sub{font-size:12px;color:var(--cactus);margin:-6px 0 8px}
 .cuadre-cat{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--cactus);margin:12px 0 4px}
 .line{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;gap:12px;border-bottom:1px solid rgba(0,0,0,.05)}
-
-.tipo-chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:600}
-.t-void{background:#f2d6dc;color:var(--bad)} .t-refund{background:#e6d9ec;color:var(--purple)} .t-adj{background:#f2e6cf;color:var(--warn)} .t-otro{background:#dce4dc;color:var(--cactus)}
 .note{font-size:11.5px;color:var(--cactus);margin-top:18px;font-style:italic}
 @media(max-width:560px){.dr-table td{padding:8px 6px;font-size:12.5px}main{padding:20px 12px 70px}.cap-grid{grid-template-columns:1fr}}
+.tipo-chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:600}
+.t-void{background:#f2d6dc;color:var(--bad)}
+.t-refund{background:#e6d9ec;color:var(--purple)}
+.t-adj{background:#f2e6cf;color:var(--warn)}
+.t-otro{background:#dce4dc;color:var(--cactus)}
+@media(max-width:640px){.libro-cols{grid-template-columns:1fr !important}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
@@ -127,12 +130,16 @@ select:focus{border-color:var(--blue)}
   </header>
   <nav class="tabs" id="tabs"></nav>
   <main>
-    <section class="view" id="v-daily"><div class="ctl"><label for="daySel">Fecha</label><select id="daySel" onchange="renderDaily()" style="max-width:150px"></select><button class="cap-btn" style="padding:9px 16px" onclick="descargarPDF()">PDF</button></div><div id="dailyBody"></div></section>
+    <section class="view" id="v-daily"><div class="ctl"><label for="daySel">Fecha</label><button class="cap-btn" style="padding:9px 12px" onclick="cambiarDia(-1)">◀</button><input id="daySel" type="date" onchange="renderDaily()" style="max-width:165px"><button class="cap-btn" style="padding:9px 12px" onclick="cambiarDia(1)">▶</button><button class="cap-btn" style="padding:9px 16px" onclick="descargarPDF()">PDF</button></div><div id="dailyBody"></div></section>
     <section class="view" id="v-captura"><div id="capturaBody"></div></section>
     <section class="view" id="v-historial"><div id="historialBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
     <section class="view" id="v-auditoria">
       <div class="ctl"><label for="audFecha">Fecha</label><input id="audFecha" type="date" onchange="cargarAuditoria()"><button class="cap-btn" style="padding:9px 16px" onclick="cargarAuditoria()">Ver</button></div>
       <div id="auditoriaBody"><div class="empty">Elige una fecha para ver la auditoría del día.</div></div>
+    </section>
+    <section class="view" id="v-libro">
+      <div class="ctl"><label for="libroFecha">Fecha</label><input id="libroFecha" type="date" onchange="cargarLibro()"><button class="cap-btn" style="padding:9px 16px" onclick="cargarLibro()">Ver</button></div>
+      <div id="libroBody"><div class="empty">Elige una fecha para ver el libro contable del día.</div></div>
     </section>
     <section class="view" id="v-ajustes"><div id="ajustesBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
     <section class="view" id="v-control"><div id="controlBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
@@ -155,7 +162,7 @@ const num=v=>{const x=parseFloat(String(v).replace(/[^0-9.\-]/g,''));return isNa
 const pct=v=>{ if(v==='' ||v==null) return '–'; let s=String(v).trim(); if(s.includes('%')) return s; let x=parseFloat(s.replace(/[^0-9.\-]/g,'')); if(isNaN(x)) return '–'; if(x<=1) x=x*100; return x.toLocaleString('es-MX',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'; };
 let SESSION=null,PENDING=null;
 (function(){const sel=document.getElementById('userSel');CONFIG.USERS.forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=u.n;sel.appendChild(o);});sel.onchange=()=>{document.getElementById('userId').value=sel.value;};document.getElementById('userId').value=sel.value;})();
-async function apiGet(params){const qs=Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&');const res=await fetch(CONFIG.WEBAPP_URL+'?'+qs);return res.json();}
+async function apiGet(params){params=Object.assign({},params,{_ts:Date.now()});const qs=Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&');const res=await fetch(CONFIG.WEBAPP_URL+'?'+qs,{cache:'no-store'});return res.json();}
 async function apiPost(body){const res=await fetch(CONFIG.WEBAPP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});return res.json();}
 async function identificar(){
   const id=document.getElementById('userId').value.trim().toUpperCase();
@@ -193,6 +200,7 @@ const TABDEFS=[
   {id:'captura',label:'Cuadre diario',levels:['capture','full']},
   {id:'historial',label:'Historial cuadres',levels:['full']},
   {id:'auditoria',label:'Auditoría del día',levels:['full']},
+  {id:'libro',label:'Libro del día',levels:['full']},
   {id:'ajustes',label:'Ajustes por usuario',levels:['full']},
   {id:'control',label:'Control mensual',levels:['full']},
 ];
@@ -217,20 +225,43 @@ async function loadAll(){
 let CAP_ROWS=[];
 const MESES={ene:0,jan:0,feb:1,mar:2,abr:3,apr:3,may:4,jun:5,jul:6,ago:7,aug:7,sep:8,oct:9,nov:10,dic:11,dec:11};
 function parseFecha(s){s=String(s).trim();if(!s)return null;let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return{y:+m[1],m:+m[2]-1,d:+m[3]};m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);if(m)return{y:+m[3]<100?2000+ +m[3]:+m[3],m:+m[2]-1,d:+m[1]};m=s.match(/^(\d{1,2})[\-\s]([A-Za-z]{3})/);if(m){const mm=MESES[m[2].toLowerCase()];if(mm!=null)return{y:2026,m:mm,d:+m[1]};}return null;}
+const ROOMS=25; // cuartos disponibles del hotel (para % Ocupación y RevPAR acumulados)
+function esBisiesto(y){return (y%4===0&&(y%100!==0||y%400===0));}
+function diasDelAnioHasta(f){const dm=[31,esBisiesto(f.y)?29:28,31,30,31,30,31,31,30,31,30,31];let d=f.d;for(let i=0;i<f.m;i++)d+=dm[i];return d;}
+function dateKey(f){return f.y+'-'+String(f.m+1).padStart(2,'0')+'-'+String(f.d).padStart(2,'0');}
+// una fila cuenta como "con datos reales" si algún ingreso/ocupación no es cero (evita parar en filas futuras vacías del molde)
+function tieneDatosFila(r){ for(let k=1;k<=39;k++){ if(num(r[k])!==0) return true; } return false; }
+let CAP_INDEX={},CAP_KEYS=[];
 function initDaily(){
   CAP_ROWS=DATA.captura.filter(r=>parseFecha(r[0]));
-  const sel=document.getElementById('daySel'); sel.innerHTML='';
-  // último día CON datos reales (algún ingreso/ocupación), no filas futuras vacías
-  const tieneDatos=r=>{ for(let k=1;k<=39;k++){ if(num(r[k])!==0) return true; } return false; };
-  let ultimoConDatos=0;
-  CAP_ROWS.forEach((r,idx)=>{ if(tieneDatos(r)) ultimoConDatos=idx; });
-  CAP_ROWS.slice().reverse().forEach((r,idx)=>{const realIdx=CAP_ROWS.length-1-idx;const o=document.createElement('option');o.value=realIdx;o.textContent=r[0];sel.appendChild(o);});
-  sel.value=ultimoConDatos;   // arranca en el último día con datos
+  CAP_INDEX={};
+  CAP_ROWS.forEach((r,idx)=>{const f=parseFecha(r[0]);if(f)CAP_INDEX[dateKey(f)]=idx;});
+  CAP_KEYS=Object.keys(CAP_INDEX).sort();
+  let defaultKey=CAP_KEYS.length?CAP_KEYS[CAP_KEYS.length-1]:null;
+  for(let i=CAP_KEYS.length-1;i>=0;i--){ if(tieneDatosFila(CAP_ROWS[CAP_INDEX[CAP_KEYS[i]]])){ defaultKey=CAP_KEYS[i]; break; } }
+  const sel=document.getElementById('daySel');
+  if(CAP_KEYS.length){sel.min=CAP_KEYS[0];sel.max=CAP_KEYS[CAP_KEYS.length-1];sel.value=defaultKey;}
+  renderDaily();
+}
+// índice (dentro de CAP_KEYS) de la fecha capturada más cercana (igual o anterior) a la elegida en el picker
+function fechaActualPos(){
+  const key=document.getElementById('daySel').value;
+  if(CAP_INDEX[key]!==undefined) return CAP_KEYS.indexOf(key);
+  let pos=-1;
+  for(let i=0;i<CAP_KEYS.length;i++){ if(CAP_KEYS[i]<=key) pos=i; else break; }
+  return pos<0?0:pos;
+}
+function cambiarDia(delta){
+  if(!CAP_KEYS.length) return;
+  let pos=Math.max(0,Math.min(CAP_KEYS.length-1,fechaActualPos()+delta));
+  document.getElementById('daySel').value=CAP_KEYS[pos];
   renderDaily();
 }
 function renderDaily(){
   if(!CAP_ROWS.length){document.getElementById('dailyBody').innerHTML='<div class="empty">Sin datos.</div>';return;}
-  const i=+document.getElementById('daySel').value||0; const r=CAP_ROWS[i]; const g=k=>r[k]!==undefined?r[k]:'';
+  const key=CAP_KEYS[fechaActualPos()];
+  document.getElementById('daySel').value=key; // refleja la fecha capturada real que se está mostrando
+  const i=CAP_INDEX[key]; const r=CAP_ROWS[i]; const g=k=>r[k]!==undefined?r[k]:'';
   const fSel=parseFecha(r[0]);
   // acumuladores MTD (mes de la fecha, hasta el día) y YTD (todo el año hasta el día)
   const cols=[1,2,3,4,6,7,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,39];
@@ -240,17 +271,30 @@ function renderDaily(){
     const enMTD=(f.y===fSel.y&&f.m===fSel.m&&f.d<=fSel.d);
     cols.forEach(c=>{const v=num(rr[c]); if(enYTD)ytd[c]+=v; if(enMTD)mtd[c]+=v;});
   });
-  // indicadores recalculados (no se suman)
-  const ocupMTD = mtd[6]>0 ? (mtd[7]/mtd[6]) : 0;   // ADR MTD = ingreso/ctos
-  const ocupYTD = ytd[6]>0 ? (ytd[7]/ytd[6]) : 0;
-  const chqMTD  = mtd[36]>0 ? (mtd[35]/mtd[36]) : 0; // cheque prom A&B
+  // indicadores recalculados a partir de los acumulados (no se suman directamente)
+  const adrMTD = mtd[6]>0 ? (mtd[7]/mtd[6]) : 0;      // ingreso acumulado / cuartos acumulados
+  const adrYTD = ytd[6]>0 ? (ytd[7]/ytd[6]) : 0;
+  const chqMTD  = mtd[36]>0 ? (mtd[35]/mtd[36]) : 0;  // cheque prom A&B
   const chqYTD  = ytd[36]>0 ? (ytd[35]/ytd[36]) : 0;
+  const diasMTD = fSel ? fSel.d : 0;                   // días transcurridos del mes hasta la fecha elegida
+  const diasYTD = fSel ? diasDelAnioHasta(fSel) : 0;   // días transcurridos del año hasta la fecha elegida
+  const dispMTD = ROOMS*diasMTD, dispYTD = ROOMS*diasYTD; // cuartos-noche disponibles acumulados
+  const ocupPctMTD = dispMTD>0 ? (mtd[6]/dispMTD*100) : 0;
+  const ocupPctYTD = dispYTD>0 ? (ytd[6]/dispYTD*100) : 0;
+  const revparMTD = dispMTD>0 ? (mtd[7]/dispMTD) : 0;
+  const revparYTD = dispYTD>0 ? (ytd[7]/dispYTD) : 0;
 
   // ── PRESUPUESTO del mes seleccionado (busca concepto por nombre en col 0) ──
   const mesCol = fSel ? (fSel.m+1) : 0; // Ene=col1 ... Dic=col12
   function pptoDe(nombre){
     if(!DATA.presupuesto||!mesCol) return null;
     const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+    if(Array.isArray(nombre)){
+      // suma de varios conceptos (ej. Total restaurante = Restaurante Alimentos + Restaurante Bebidas)
+      let sum=0, found=false;
+      nombre.forEach(n=>{ const v=pptoDe(n); if(v!=null){ sum+=v; found=true; } });
+      return found?sum:null;
+    }
     const target=norm(nombre);
     for(let k=0;k<DATA.presupuesto.length;k++){
       if(norm(DATA.presupuesto[k][0])===target) return num(DATA.presupuesto[k][mesCol]);
@@ -263,21 +307,32 @@ function renderDaily(){
   const M=(c)=>'$'+money(num(g(c)));
   const I=(c)=>int(num(g(c)));
   const cell=(v)=>`<td class="val">${v}</td>`;
-  // celda de variación: MTD real vs Ppto del mes. Verde si >=, rojo si <.
-  function varCells(realMtd, ppto){
+  // celda de variación: acumulado real (MTD) vs Ppto del mes. Verde si ya alcanzó/superó la meta, rojo si aún falta.
+  function varCellsFmt(realMtd, ppto, fmt){
     if(ppto==null||ppto===0) return `<td class="val" style="color:#c9c0a8">–</td><td class="val" style="color:#c9c0a8">–</td>`;
     const dif=realMtd-ppto; const pctv=(dif/ppto)*100;
     const col=dif>=0?'var(--ok)':'var(--bad)'; const sg=dif>=0?'+':'';
-    return `<td class="val">$${money(ppto)}</td><td class="val" style="color:${col}">${sg}${money(dif)}<br><span style="font-size:10px">${sg}${pctv.toFixed(1)}%</span></td>`;
+    return `<td class="val">${fmt(ppto)}</td><td class="val" style="color:${col}">${sg}${fmt(dif)}<br><span style="font-size:10px">${sg}${pctv.toFixed(1)}%</span></td>`;
   }
+  const fmtMoney=v=>'$'+money(v);
+  const fmtInt=v=>int(v);
+  const fmtPct=v=>v.toLocaleString('es-MX',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+  function varCells(realMtd, ppto){ return varCellsFmt(realMtd,ppto,fmtMoney); }
   // helpers de fila con Ppto+Variación (por nombre de concepto para buscar el ppto)
   function fMoney(lbl,c,cls,pptoNombre){ const pp=pptoDe(pptoNombre||lbl); return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(M(c))}${cell('$'+money(mtd[c]))}${varCells(mtd[c],pp)}${cell('$'+money(ytd[c]))}</tr>`; }
-  function fInt(lbl,c,cls){ return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(I(c))}${cell(int(mtd[c]))}<td class="val" style="color:#c9c0a8">–</td><td class="val" style="color:#c9c0a8">–</td>${cell(int(ytd[c]))}</tr>`; }
+  function fInt(lbl,c,cls,pptoNombre){ const pp=pptoDe(pptoNombre||lbl); return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(I(c))}${cell(int(mtd[c]))}${varCellsFmt(mtd[c],pp,fmtInt)}${cell(int(ytd[c]))}</tr>`; }
   function fRaw(lbl,valDia,valMtd,valYtd,cls){ return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(valDia)}${cell(valMtd)}<td class="val" style="color:#c9c0a8">–</td><td class="val" style="color:#c9c0a8">–</td>${cell(valYtd)}</tr>`; }
+  // fila de indicador (tasa/porcentaje): MTD/YTD llegan ya calculados como número, no como texto
+  function fInd(lbl,valDiaStr,mtdNum,ytdNum,fmt,pptoNombre,cls){
+    let pp=pptoDe(pptoNombre||lbl);
+    // Sheets guarda las celdas con formato "%" como fracción (0.506 = 50.6%); si detectamos fracción, escalamos a puntos porcentuales.
+    if(fmt===fmtPct && pp!=null && Math.abs(pp)<=1) pp=pp*100;
+    return `<tr class="${cls||''}"><td class="lbl">${lbl}</td>${cell(valDiaStr)}${cell(fmt(mtdNum))}${varCellsFmt(mtdNum,pp,fmt)}${cell(fmt(ytdNum))}</tr>`;
+  }
   function head(t){ return `<tr class="head"><td>${t}</td><td class="val">Hoy</td><td class="val">MTD</td><td class="val">Ppto</td><td class="val">Var</td><td class="val">YTD</td></tr>`; }
 
   const kpis=`<div class="kpis">
-    <div class="kpi"><div class="k-lbl">ADR</div><div class="k-val">$${money(num(g(9)))}</div><div class="k-sub">MTD $${money(ocupMTD)}</div></div>
+    <div class="kpi"><div class="k-lbl">ADR</div><div class="k-val">$${money(num(g(9)))}</div><div class="k-sub">MTD $${money(adrMTD)}</div></div>
     <div class="kpi"><div class="k-lbl">Ocupación</div><div class="k-val">${pct(g(8))}</div><div class="k-sub">${int(num(g(1)))} vendidas</div></div>
     <div class="kpi"><div class="k-lbl">Ingreso habitaciones</div><div class="k-val">$${money(num(g(7)))}</div><div class="k-sub">YTD $${money(ytd[7])}</div></div>
     <div class="kpi"><div class="k-lbl">Total Hotel</div><div class="k-val">$${money(num(g(39)))}</div><div class="k-sub">MTD $${money(mtd[39])}</div></div>
@@ -291,10 +346,10 @@ function renderDaily(){
     ${fInt('Hab. cortesía',2)}
     ${fInt('Hab. uso casa',3)}
     ${fInt('Hab. intercambio',4)}
-    ${fInt('Total cuartos ocupados',6,'total')}
-    ${fRaw('% Ocupación', pct(g(8)),'–','–')}
-    ${fRaw('ADR', '$'+money(num(g(9))), '$'+money(ocupMTD), '$'+money(ocupYTD))}
-    ${fRaw('RevPAR', '$'+money(num(g(10))), '–','–')}
+    ${fInt('Total cuartos ocupados',6,'total','Total cuartos ocupados')}
+    ${fInd('% Ocupación', pct(g(8)), ocupPctMTD, ocupPctYTD, fmtPct, '% de Ocupación')}
+    ${fInd('ADR', '$'+money(num(g(9))), adrMTD, adrYTD, fmtMoney, 'ADR')}
+    ${fInd('RevPAR', '$'+money(num(g(10))), revparMTD, revparYTD, fmtMoney, 'RevPAR')}
     ${fMoney('Total cuartos (ingreso)',7,'total','Total Cuartos (Ingreso Hab.)')}
 
     ${head('División cuartos')}
@@ -309,20 +364,20 @@ function renderDaily(){
     ${head('Restaurante')}
     ${fMoney('Alimentos',18,'sub','Restaurante Alimentos')}
     ${fMoney('Bebidas',19,'sub','Restaurante Bebidas')}
-    ${fMoney('Total restaurante',20,'total')}
+    ${fMoney('Total restaurante',20,'total',['Restaurante Alimentos','Restaurante Bebidas'])}
     ${fInt('No. Pax',21)}
 
     ${head('Eventos')}
-    ${fMoney('Alimentos',22,'sub')}
-    ${fMoney('Bebidas',23,'sub')}
-    ${fMoney('Renta',24,'sub')}
-    ${fMoney('Extras',25,'sub')}
+    ${fMoney('Alimentos',22,'sub','Eventos Alimentos')}
+    ${fMoney('Bebidas',23,'sub','Eventos Bebidas')}
+    ${fMoney('Renta',24,'sub','Eventos Renta')}
+    ${fMoney('Extras',25,'sub','Eventos Extras')}
     ${fMoney('Total eventos',26,'total','Total Eventos')}
     ${fInt('No. Pax',27)}
 
     ${head('Minibar')}
-    ${fMoney('Alimentos',28,'sub')}
-    ${fMoney('Bebidas',29,'sub')}
+    ${fMoney('Alimentos',28,'sub','Minibar Alimentos')}
+    ${fMoney('Bebidas',29,'sub','Minibar Bebidas')}
     ${fMoney('Tabaquería / Otros',30,'sub')}
     ${fMoney('Total minibar',31,'total','Total Minibar')}
     ${fInt('No. Pax',32)}
@@ -338,13 +393,12 @@ function renderDaily(){
     ${fRaw('RevPAR (A&B + Hab)', '$'+money(num(g(38))), '–','–')}
     ${fMoney('TOTAL HOTEL',39,'total','TOTAL HOTEL')}
   </table></div>
-  <div class="note">MTD = mes en curso hasta la fecha · YTD = año hasta la fecha. Presupuesto y Variación se agregan al conectar la pestaña PRESUPUESTO. Los indicadores (%, ADR, RevPAR, cheque) se recalculan, no se suman.</div>`;
+  <div class="note">MTD = todo el mes en curso sumado hasta la fecha elegida · YTD = todo el año sumado hasta la fecha elegida · Var = acumulado real menos Ppto del mes (verde = meta alcanzada/superada, rojo = lo que falta para llegar). Ppto/Var solo aparecen si esa fila tiene una meta capturada en la pestaña PRESUPUESTO para el mes seleccionado; si la celda está vacía ahí, aquí se ve "–". % Ocupación y RevPAR se recalculan con ${ROOMS} cuartos disponibles × días transcurridos; ADR y cheque promedio, con el acumulado de ingreso entre el acumulado de cuartos/pax.</div>`;
   document.getElementById('dailyBody').innerHTML=kpis+t;
 }
 
 function descargarPDF(){
-  const sel=document.getElementById('daySel');
-  const fecha=sel.options[sel.selectedIndex]?sel.options[sel.selectedIndex].text:'';
+  const fecha=document.getElementById('daySel').value||'';
   const el=document.getElementById('dailyBody');
   const opt={margin:[10,10,10,10],filename:'DailyReport_CasaYuma_'+fecha.replace(/[^0-9A-Za-z]/g,'')+'.pdf',
     image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,backgroundColor:'#F5F1E6'},
@@ -534,6 +588,119 @@ async function justificar(idTx){
     el.parentElement.innerHTML=`<div style="font-size:11px;color:var(--ok)">✓ ${texto}<br><span style="color:var(--cactus)">${SESSION.nombre}</span></div>`;
   }catch(e){alert('No se pudo guardar.');el.disabled=false;}
 }
+function renderHistorial(){
+  const rows=(DATA.cuadres||[]).slice(1).filter(r=>r[0]);
+  if(!rows.length){document.getElementById('historialBody').innerHTML='<div class="empty">Aún no hay cuadres capturados.</div>';return;}
+  rows.sort((a,b)=>String(b[0]).localeCompare(String(a[0])));
+  window._HIST=rows;
+  const body=rows.map((r,idx)=>{
+    const fecha=String(r[0]).slice(0,10), por=r[14]||'—', general=r[23]||'';
+    const sem = general==='CUADRA' ? '<span class="badge sem-ok">🟢</span>' : general==='REVISAR' ? '<span class="badge sem-bad">🔴</span>' : '<span style="color:#c9c0a8">—</span>';
+    const estT=r[7]||'';
+    return `<tr class="clickrow" onclick="detalleCuadre(${idx})"><td>${fecha}</td><td>${por}</td><td>${estT}</td><td style="text-align:center">${sem}</td></tr>`;
+  }).join('');
+  document.getElementById('historialBody').innerHTML=`
+    <div class="section-eyebrow">Historial de cuadres</div>
+    <table class="aud"><thead><tr><th>Fecha</th><th>Capturado por</th><th>Transfer</th><th style="text-align:center">Cuadre</th></tr></thead>
+    <tbody>${body}</tbody></table>
+    <div class="note">Clic en un día para ver el desglose completo por canal.</div>
+    <div id="cuadreDetBody"></div>`;
+}
+function detalleCuadre(idx){
+  const r=window._HIST[idx]; if(!r)return;
+  const m=v=>'$'+money(num(v));
+  const fecha=String(r[0]).slice(0,10);
+  const estadoLinea=(lbl,cap,estado)=>{
+    const ico = estado==='OK'?'🟢': estado==='REVISAR'?'🔴':'🔵';
+    return `<div class="line"><span>${ico} ${lbl}</span><span>${cap}${estado?(' · '+estado):''}</span></div>`;
+  };
+  const totFront=num(r[4]), openpay=num(r[5]), transfer=num(r[6]), estT=r[7]||'', totRest=num(r[11]), arqF=num(r[12]), arqR=num(r[13]);
+  const resTF=r[17]||'', resOP=r[18]||'', resEF=r[19]||'', resVCC=r[20]||'', resTR=r[21]||'', resER=r[22]||'', general=r[23]||'';
+  const allOk = general==='CUADRA';
+  document.getElementById('cuadreDetBody').innerHTML=`
+    <div style="margin-top:18px;padding:16px;border-radius:2px;border:1px solid ${allOk?'var(--ok)':'var(--bad)'};background:${allOk?'#e0efe0':'#faf0ef'}">
+      <div style="font-weight:600;margin-bottom:4px;font-family:var(--disp)">${fecha} · ${allOk?'✅ Cuadra':'⚠️ Revisar'}</div>
+      <div style="font-size:11px;color:var(--cactus);margin-bottom:10px">Capturado por ${r[14]||'—'} · ${r[15]||''}</div>
+      <div class="cuadre-cat">Desglose terminal Front</div>
+      <div class="line"><span>Crédito otros</span><span>${m(r[1])}</span></div>
+      <div class="line"><span>Crédito AMEX</span><span>${m(r[2])}</span></div>
+      <div class="line"><span>Débito otros</span><span>${m(r[3])}</span></div>
+      <div class="line"><span><strong>Total terminal Front</strong></span><span><strong>${m(r[4])}</strong></span></div>
+      <div class="cuadre-cat">Conciliación Front (vs Cloudbeds)</div>
+      ${estadoLinea('Terminal BBVA', m(totFront), resTF)}
+      ${estadoLinea('Openpay', m(openpay), resOP)}
+      ${estadoLinea('Transferencias ('+(estT||'—')+')', m(transfer), '')}
+      ${estadoLinea('VCC agencias', resVCC, '')}
+      ${estadoLinea('Efectivo Front', m(arqF), resEF)}
+      <div class="cuadre-cat">Conciliación Restaurante (vs Poster)</div>
+      ${estadoLinea('Terminal Rest', m(totRest), resTR)}
+      ${estadoLinea('Efectivo Rest', m(arqR), resER)}
+    </div>`;
+  document.getElementById('cuadreDetBody').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function cargarLibro(){
+  const fecha=document.getElementById('libroFecha').value;
+  if(!fecha){ document.getElementById('libroBody').innerHTML='<div class="empty">Elige una fecha.</div>'; return; }
+  document.getElementById('libroBody').innerHTML='<div class="loading"><div class="spinner"></div>Cargando jornal del día…</div>';
+  apiGet({accion:'libroDia',id:SESSION.id,pin:SESSION.pin,fecha:fecha}).then(j=>{
+    if(!j.ok){ document.getElementById('libroBody').innerHTML=`<div class="errbox">${j.error}</div>`; return; }
+    pintarLibro(j.libro);
+  }).catch(e=>{ document.getElementById('libroBody').innerHTML='<div class="errbox">No se pudo consultar.</div>'; });
+}
+function pintarLibro(L){
+  if(L.error){ document.getElementById('libroBody').innerHTML=`<div class="errbox">${L.error}</div>`; return; }
+  window._LIBRO=L;
+  // resumen: pagos por canal (conecta con el cuadre)
+  const canalRows=L.canales.map(c=>`<tr><td>${c.canal}</td><td class="num">${c.n}</td><td class="num">$${money(c.monto)}</td></tr>`).join('');
+  // grupos por clasificación (de dónde viene cada peso)
+  const grupoRows=L.grupos.map(g=>{
+    const excl=/excluir/.test(g.clasif);
+    return `<tr class="clickrow" onclick="filtrarLibro('${g.clasif.replace(/'/g,"\\'")}')" style="${excl?'opacity:.6':''}"><td>${g.clasif}</td><td class="num">${g.n}</td><td class="num">$${money(g.monto)}</td></tr>`;
+  }).join('');
+  document.getElementById('libroBody').innerHTML=`
+    <div style="padding:16px;background:var(--wool);border-radius:2px;margin-bottom:14px">
+      <strong style="font-family:var(--disp);font-size:19px">Libro contable · ${L.fecha}</strong>
+      <div style="font-size:13px;color:var(--ink);margin-top:6px">${L.totalMovimientos} movimientos · Cargos $${money(L.totalCargos)} · Pagos $${money(L.totalPagos)}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="libro-cols">
+      <div>
+        <div class="section-eyebrow">Pagos por canal (para el cuadre)</div>
+        <table class="aud"><thead><tr><th>Canal</th><th style="text-align:right">#</th><th style="text-align:right">Monto</th></tr></thead><tbody>${canalRows||'<tr><td colspan=3>Sin pagos</td></tr>'}</tbody></table>
+        <div class="note">Estos son los pagos que el cuadre concilia por canal.</div>
+      </div>
+      <div>
+        <div class="section-eyebrow">De dónde viene (por clasificación)</div>
+        <table class="aud"><thead><tr><th>Clasificación</th><th style="text-align:right">#</th><th style="text-align:right">Monto</th></tr></thead><tbody>${grupoRows}</tbody></table>
+        <div class="note">Clic en una clasificación para filtrar los movimientos abajo.</div>
+      </div>
+    </div>
+    <div class="ctl" style="margin-top:18px"><label>Ver movimientos</label><select id="libroFiltro" onchange="pintarLibroTabla()"><option value="Todos">Todas las clasificaciones</option>${L.grupos.map(g=>`<option value="${g.clasif}">${g.clasif}</option>`).join('')}</select></div>
+    <div id="libroTabla"></div>`;
+  pintarLibroTabla();
+}
+function filtrarLibro(clasif){
+  document.getElementById('libroFiltro').value=clasif;
+  pintarLibroTabla();
+  document.getElementById('libroTabla').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function pintarLibroTabla(){
+  const L=window._LIBRO; const filtro=document.getElementById('libroFiltro').value;
+  const items=(filtro==='Todos')?L.items:L.items.filter(x=>x.clasif===filtro);
+  const filas=items.map(it=>`<tr>
+    <td>${it.hora}</td>
+    <td>${it.concepto}</td>
+    <td style="text-align:center">${it.cat}</td>
+    <td>${it.clasif}</td>
+    <td style="text-align:center">${it.codigo}</td>
+    <td style="text-align:center">${it.hab}</td>
+    <td style="text-align:center">${it.reserva}</td>
+    <td class="num" style="color:${it.monto<0?'var(--bad)':'inherit'}">$${money(it.monto)}</td>
+  </tr>`).join('');
+  document.getElementById('libroTabla').innerHTML=`
+    <div class="section-eyebrow">Movimientos ${filtro!=='Todos'?'· '+filtro:'del día'} · ${items.length}</div>
+    <div style="overflow-x:auto"><table class="aud"><thead><tr><th>Hora</th><th>Concepto</th><th style="text-align:center">Categoría</th><th>Clasificación</th><th style="text-align:center">Código</th><th style="text-align:center">Hab</th><th style="text-align:center">Reserva</th><th style="text-align:right">Monto</th></tr></thead><tbody>${filas}</tbody></table></div>
+    <div class="note">Jornal completo en vivo de Cloudbeds. Cada movimiento con su clasificación y código, para rastrear de dónde viene.</div>`;
+}
 function cargarAuditoria(){
   const fecha=document.getElementById('audFecha').value;
   if(!fecha){ document.getElementById('auditoriaBody').innerHTML='<div class="empty">Elige una fecha.</div>'; return; }
@@ -656,6 +823,7 @@ function detalleCuadre(idx){
     </div>`;
   document.getElementById('cuadreDetBody').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
+
 function detalleDia(fecha){
   document.getElementById('ctrlDiaBody').innerHTML='<div class="loading"><div class="spinner"></div>Consultando '+fecha+'…</div>';
   document.getElementById('ctrlDiaBody').scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -727,7 +895,6 @@ function detalleMes(mesKey){
     <div class="note">Clic en un día para ver la causa: transacciones sin clasificar y desglose de cuartos ocupados vs. con renta.</div><div id="ctrlDiaBody"></div>`;
   document.getElementById('ctrlDetBody').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
-
 </script>
 </body>
 </html>
