@@ -692,13 +692,14 @@ function pintarLibroTabla(){
     <td style="text-align:center">${it.cat}</td>
     <td>${it.clasif}</td>
     <td style="text-align:center">${it.codigo}</td>
+    <td style="text-align:center">${it.folio||'—'}</td>
     <td style="text-align:center">${it.hab}</td>
     <td style="text-align:center">${it.reserva}</td>
     <td class="num" style="color:${it.monto<0?'var(--bad)':'inherit'}">$${money(it.monto)}</td>
   </tr>`).join('');
   document.getElementById('libroTabla').innerHTML=`
     <div class="section-eyebrow">Movimientos ${filtro!=='Todos'?'· '+filtro:'del día'} · ${items.length}</div>
-    <div style="overflow-x:auto"><table class="aud"><thead><tr><th>Hora</th><th>Concepto</th><th style="text-align:center">Categoría</th><th>Clasificación</th><th style="text-align:center">Código</th><th style="text-align:center">Hab</th><th style="text-align:center">Reserva</th><th style="text-align:right">Monto</th></tr></thead><tbody>${filas}</tbody></table></div>
+    <div style="overflow-x:auto"><table class="aud"><thead><tr><th>Hora</th><th>Concepto</th><th style="text-align:center">Categoría</th><th>Clasificación</th><th style="text-align:center">Código</th><th style="text-align:center">Folio</th><th style="text-align:center">Hab</th><th style="text-align:center">Reserva</th><th style="text-align:right">Monto</th></tr></thead><tbody>${filas}</tbody></table></div>
     <div class="note">Jornal completo en vivo de Cloudbeds. Cada movimiento con su clasificación y código, para rastrear de dónde viene.</div>`;
 }
 function cargarAuditoria(){
