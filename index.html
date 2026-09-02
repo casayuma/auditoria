@@ -134,11 +134,11 @@ select:focus{border-color:var(--blue)}
     <section class="view" id="v-captura"><div id="capturaBody"></div></section>
     <section class="view" id="v-historial"><div id="historialBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
     <section class="view" id="v-auditoria">
-      <div class="ctl"><label for="audFecha">Fecha</label><input id="audFecha" type="date" onchange="cargarAuditoria()"><button class="cap-btn" style="padding:9px 16px" onclick="cargarAuditoria()">Ver</button></div>
+      <div class="ctl"><label for="audFecha">Fecha</label><input id="audFecha" type="date" onchange="cargarAuditoria()"><button class="cap-btn" style="padding:9px 16px" onclick="cargarAuditoria()">Ver</button><button class="cap-btn" style="padding:9px 16px" onclick="pdfDe('auditoriaBody','Auditoria_CasaYuma',document.getElementById('audFecha').value)">PDF</button></div>
       <div id="auditoriaBody"><div class="empty">Elige una fecha para ver la auditoría del día.</div></div>
     </section>
     <section class="view" id="v-libro">
-      <div class="ctl"><label for="libroFecha">Fecha</label><input id="libroFecha" type="date" onchange="cargarLibro()"><button class="cap-btn" style="padding:9px 16px" onclick="cargarLibro()">Ver</button></div>
+      <div class="ctl"><label for="libroFecha">Fecha</label><input id="libroFecha" type="date" onchange="cargarLibro()"><button class="cap-btn" style="padding:9px 16px" onclick="cargarLibro()">Ver</button><button class="cap-btn" style="padding:9px 16px" onclick="pdfDe('libroBody','Libro_CasaYuma',document.getElementById('libroFecha').value,'landscape')">PDF</button></div>
       <div id="libroBody"><div class="empty">Elige una fecha para ver el libro contable del día.</div></div>
     </section>
     <section class="view" id="v-ajustes"><div id="ajustesBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
@@ -199,8 +199,8 @@ const TABDEFS=[
   {id:'daily',label:'Daily Report',levels:['read','capture','full']},
   {id:'captura',label:'Cuadre diario',levels:['capture','full']},
   {id:'historial',label:'Historial cuadres',levels:['full']},
-  {id:'auditoria',label:'Auditoría del día',levels:['full']},
-  {id:'libro',label:'Libro del día',levels:['full']},
+  {id:'auditoria',label:'Auditoría del día',levels:['capture','full']},
+  {id:'libro',label:'Libro del día',levels:['capture','full']},
   {id:'ajustes',label:'Ajustes por usuario',levels:['full']},
   {id:'control',label:'Control mensual',levels:['full']},
 ];
@@ -399,11 +399,21 @@ function renderDaily(){
 
 function descargarPDF(){
   const fecha=document.getElementById('daySel').value||'';
-  const el=document.getElementById('dailyBody');
-  const opt={margin:[10,10,10,10],filename:'DailyReport_CasaYuma_'+fecha.replace(/[^0-9A-Za-z]/g,'')+'.pdf',
-    image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,backgroundColor:'#F5F1E6'},
-    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}};
-  html2pdf().set(opt).from(el).save();
+  pdfDe('dailyBody','DailyReport_CasaYuma',fecha);
+}
+function pdfDe(idEl, prefijo, fecha, orient){
+  const el=document.getElementById(idEl);
+  if(!el || !el.innerHTML.trim() || el.querySelector('.empty')){ alert('Primero carga la información de una fecha.'); return; }
+  const clon=el.cloneNode(true);
+  clon.querySelectorAll('.no-pdf').forEach(n=>n.remove());          // quitar botones del PDF
+  clon.querySelectorAll('textarea,button,input,select').forEach(n=>{ if(!n.closest('.no-pdf')) n.remove(); });
+  const opt={margin:[10,10,10,10],
+    filename:prefijo+'_'+String(fecha||'').replace(/[^0-9A-Za-z]/g,'')+'.pdf',
+    image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2,backgroundColor:'#F5F1E6'},
+    jsPDF:{unit:'mm',format:'a4',orientation:(orient||'portrait')},
+    pagebreak:{mode:['avoid-all','css','legacy']}};
+  html2pdf().set(opt).from(clon).save();
 }
 
 function renderCaptura(){
@@ -500,7 +510,10 @@ function pintarCuadre(c, transferEstado){
   const allOk=f.terminal.ok&&f.openpay.ok&&f.efectivo.ok&&c.rest.terminal.ok&&c.rest.efectivo.ok&&(transferEstado==='Validado'?f.transfer.ok:true);
   document.getElementById('cuadreRes').innerHTML=`
     <div style="margin-top:18px;padding:16px;border-radius:2px;border:1px solid ${allOk?'var(--ok)':'var(--bad)'};background:${allOk?'#e0efe0':'#faf0ef'}">
-      <div style="font-weight:600;margin-bottom:10px;font-family:var(--disp)">${allOk?'✅ Todo cuadra':'⚠️ Revisar diferencias'}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-weight:600;font-family:var(--disp)">${allOk?'✅ Todo cuadra':'⚠️ Revisar diferencias'}</span>
+        <button class="cap-btn no-pdf" style="padding:6px 12px;font-size:12px" onclick="pdfDe('cuadreRes','Cuadre_CasaYuma',document.getElementById('cFecha').value)">PDF</button>
+      </div>
       <div class="cuadre-cat">Front · Cloudbeds</div>
       ${linea('Terminal BBVA',f.terminal)}
       ${linea('Openpay',f.openpay)}
