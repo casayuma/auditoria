@@ -143,6 +143,15 @@ select:focus{border-color:var(--blue)}
     </section>
     <section class="view" id="v-ajustes"><div id="ajustesBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
     <section class="view" id="v-control"><div id="controlBody"><div class="loading"><div class="spinner"></div>Cargando…</div></div></section>
+    <section class="view" id="v-ingpago">
+      <div class="ctl">
+        <label for="ivpDesde">Desde</label><input id="ivpDesde" type="date">
+        <label for="ivpHasta">Hasta</label><input id="ivpHasta" type="date">
+        <button class="cap-btn" style="padding:9px 16px" onclick="cargarIngPago()">Ver</button>
+        <button class="cap-btn no-pdf" style="padding:9px 16px" onclick="pdfDe('ingpagoBody','IngresoVsPago_CasaYuma',document.getElementById('ivpDesde').value,'landscape')">PDF</button>
+      </div>
+      <div id="ingpagoBody"><div class="empty">Elige una fecha (o rango) para detectar cargos sin contrapago.</div></div>
+    </section>
   </main>
 </div>
 <script>
@@ -203,6 +212,7 @@ const TABDEFS=[
   {id:'libro',label:'Libro del día',levels:['capture','full']},
   {id:'ajustes',label:'Ajustes por usuario',levels:['full']},
   {id:'control',label:'Control mensual',levels:['full']},
+  {id:'ingpago',label:'Ingreso vs Pago',levels:['full']},
 ];
 function buildTabs(){const tabs=document.getElementById('tabs');tabs.innerHTML='';const allowed=TABDEFS.filter(t=>t.levels.includes(SESSION.nivel));allowed.forEach((t,i)=>{const b=document.createElement('button');b.textContent=t.label;b.dataset.view=t.id;if(i===0)b.classList.add('active');b.onclick=()=>switchView(t.id,b);tabs.appendChild(b);});switchView(allowed[0].id,tabs.querySelector('button'));}
 function switchView(id,btn){document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('v-'+id).classList.add('active');}
@@ -404,16 +414,20 @@ function descargarPDF(){
 function pdfDe(idEl, prefijo, fecha, orient){
   const el=document.getElementById(idEl);
   if(!el || !el.innerHTML.trim() || el.querySelector('.empty')){ alert('Primero carga la información de una fecha.'); return; }
-  const clon=el.cloneNode(true);
-  clon.querySelectorAll('.no-pdf').forEach(n=>n.remove());          // quitar botones del PDF
-  clon.querySelectorAll('textarea,button,input,select').forEach(n=>{ if(!n.closest('.no-pdf')) n.remove(); });
+  // ocultar botones .no-pdf temporalmente (sin clonar: html2canvas necesita el elemento en el DOM)
+  const ocultos=[];
+  el.querySelectorAll('.no-pdf').forEach(n=>{ ocultos.push([n,n.style.display]); n.style.display='none'; });
   const opt={margin:[10,10,10,10],
     filename:prefijo+'_'+String(fecha||'').replace(/[^0-9A-Za-z]/g,'')+'.pdf',
     image:{type:'jpeg',quality:0.98},
-    html2canvas:{scale:2,backgroundColor:'#F5F1E6'},
+    html2canvas:{scale:2,backgroundColor:'#F5F1E6',useCORS:true},
     jsPDF:{unit:'mm',format:'a4',orientation:(orient||'portrait')},
-    pagebreak:{mode:['avoid-all','css','legacy']}};
-  html2pdf().set(opt).from(clon).save();
+    pagebreak:{mode:['css','legacy']}};
+  html2pdf().set(opt).from(el).save().then(()=>{
+    ocultos.forEach(([n,d])=>{ n.style.display=d; });   // restaurar botones
+  }).catch(()=>{
+    ocultos.forEach(([n,d])=>{ n.style.display=d; });
+  });
 }
 
 function renderCaptura(){
@@ -650,6 +664,81 @@ function detalleCuadre(idx){
       ${estadoLinea('Efectivo Rest', m(arqR), resER)}
     </div>`;
   document.getElementById('cuadreDetBody').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function cargarIngPago(){
+  const desde=document.getElementById('ivpDesde').value;
+  let hasta=document.getElementById('ivpHasta').value||desde;
+  if(!desde){ document.getElementById('ingpagoBody').innerHTML='<div class="empty">Elige al menos la fecha "Desde".</div>'; return; }
+  document.getElementById('ingpagoBody').innerHTML='<div class="loading"><div class="spinner"></div>Analizando cargos vs pagos…</div>';
+  apiGet({accion:'ingresoVsPago',id:SESSION.id,pin:SESSION.pin,desde:desde,hasta:hasta}).then(j=>{
+    if(!j.ok){ document.getElementById('ingpagoBody').innerHTML=`<div class="errbox">${j.error}</div>`; return; }
+    pintarIngPago(j.res);
+  }).catch(e=>{ document.getElementById('ingpagoBody').innerHTML='<div class="errbox">No se pudo consultar.</div>'; });
+}
+function pintarIngPago(R){
+  if(R.error){ document.getElementById('ingpagoBody').innerHTML=`<div class="errbox">${R.error}</div>`; return; }
+  const periodo = (R.desde===R.hasta)?R.desde:(R.desde+' → '+R.hasta);
+  const nAlertas = R.anomalias.length + R.pendientes.length;
+
+  // Anomalías (cargos sueltos sin folio ni reserva — como Natalia)
+  let anomHtml='';
+  if(R.anomalias.length){
+    const filas=R.anomalias.map(a=>`<tr>
+      <td>${a.fecha}</td><td>${a.concepto}</td>
+      <td class="num" style="color:var(--bad);font-weight:600">$${money(a.monto)}</td>
+      <td>${a.usuario}</td><td>${a.notas||'—'}</td></tr>`).join('');
+    anomHtml=`<div class="section-eyebrow" style="color:var(--bad)">⚠️ Cargos sin reserva ni pago verificable (${R.anomalias.length})</div>
+      <table class="aud"><thead><tr><th>Fecha</th><th>Concepto</th><th style="text-align:right">Monto</th><th>Registró</th><th>Notas</th></tr></thead><tbody>${filas}</tbody></table>
+      <div class="note">Cargos sueltos sin reserva y sin folio de Poster. No hay forma de verificar su pago. Revisa cada uno: ¿servicio real cobrado, o error/prueba que debe anularse?</div>`;
+  } else {
+    anomHtml=`<div class="section-eyebrow">✓ Cargos sin reserva ni pago</div><div class="note">Ninguno en este período. ✓</div>`;
+  }
+
+  // Reservas que se fueron sin pagar todo
+  let pendHtml='';
+  if(R.pendientes.length){
+    const filas=R.pendientes.map(p=>`<tr>
+      <td>${p.reserva}</td><td>${p.huesped}</td><td style="text-align:center">${p.hab}</td><td style="text-align:center">${p.checkOut}</td>
+      <td class="num">$${money(p.cargos)}</td><td class="num">$${money(p.pagos)}</td>
+      <td class="num" style="color:var(--bad);font-weight:600">$${money(p.saldo)}</td></tr>`).join('');
+    pendHtml=`<div class="section-eyebrow" style="color:var(--bad);margin-top:22px">⚠️ Reservas con checkout y saldo pendiente (${R.pendientes.length})</div>
+      <table class="aud"><thead><tr><th>Reserva</th><th>Huésped</th><th style="text-align:center">Hab</th><th style="text-align:center">Check-out</th><th style="text-align:right">Cargado</th><th style="text-align:right">Pagado</th><th style="text-align:right">Saldo</th></tr></thead><tbody>${filas}</tbody></table>
+      <div class="note">Reservas que ya hicieron checkout pero quedaron con saldo. Revisa si el pago entró por otra vía o quedó por cobrar.</div>`;
+  } else {
+    pendHtml=`<div class="section-eyebrow" style="margin-top:22px">✓ Reservas con checkout y saldo pendiente</div><div class="note">Ninguna. ✓</div>`;
+  }
+
+  // Agencia (verificar liquidación)
+  let agHtml='';
+  if(R.agencia.length){
+    const filas=R.agencia.map(p=>`<tr>
+      <td>${p.reserva}</td><td>${p.huesped}</td><td style="text-align:center">${p.hab}</td><td style="text-align:center">${p.checkOut}</td>
+      <td class="num">$${money(p.cargos)}</td><td class="num">$${money(p.pagos)}</td>
+      <td class="num">$${money(p.saldo)}</td></tr>`).join('');
+    agHtml=`<div class="section-eyebrow" style="margin-top:22px">Reservas de agencia — verificar liquidación (${R.agencia.length})</div>
+      <table class="aud"><thead><tr><th>Reserva</th><th>Huésped</th><th style="text-align:center">Hab</th><th style="text-align:center">Check-out</th><th style="text-align:right">Cargado</th><th style="text-align:right">Pagado (VCC)</th><th style="text-align:right">Saldo</th></tr></thead><tbody>${filas}</tbody></table>
+      <div class="note">Pago vía tarjeta virtual/OTA. El saldo puede liquidarse por la agencia aparte — verificar en el estado de cuenta de la OTA.</div>`;
+  }
+
+  // Micro-cargos (pruebas)
+  let microHtml='';
+  if(R.micro.length){
+    const filas=R.micro.map(m=>`<tr><td>${m.fecha}</td><td>${m.concepto}</td><td class="num">$${money(m.monto)}</td><td>${m.usuario}</td><td>${m.reserva}</td></tr>`).join('');
+    microHtml=`<div class="section-eyebrow" style="margin-top:22px">Micro-cargos ≤ $1 — posibles pruebas (${R.micro.length})</div>
+      <table class="aud"><thead><tr><th>Fecha</th><th>Concepto</th><th style="text-align:right">Monto</th><th>Registró</th><th>Reserva</th></tr></thead><tbody>${filas}</tbody></table>
+      <div class="note">Cargos de 1 centavo o menos, típicamente pruebas de catálogo. Conviene anularlos para limpiar.</div>`;
+  }
+
+  document.getElementById('ingpagoBody').innerHTML=`
+    <div style="padding:16px;background:${nAlertas>0?'#faf0ef':'var(--wool)'};border-radius:2px;margin-bottom:14px;border:1px solid ${nAlertas>0?'var(--bad)':'var(--line)'}">
+      <strong style="font-family:var(--disp);font-size:19px">Ingreso vs Pago · ${periodo}</strong>
+      <div style="font-size:13px;margin-top:6px">${nAlertas>0?'<span style="color:var(--bad);font-weight:600">'+nAlertas+' alertas que requieren revisión</span>':'<span style="color:var(--ok);font-weight:600">Sin alertas — todo cuadra ✓</span>'}</div>
+      <div style="font-size:11.5px;color:var(--cactus);margin-top:4px">Ventas de restaurante walk-in (con folio Poster): ${R.restaurante.n} · $${money(R.restaurante.total)} — normales, no requieren acción.</div>
+    </div>
+    ${anomHtml}
+    ${pendHtml}
+    ${agHtml}
+    ${microHtml}`;
 }
 function cargarLibro(){
   const fecha=document.getElementById('libroFecha').value;
